@@ -24,16 +24,16 @@ module out_reg_shift
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
         parameter N = 3,
-        parameter COL_WIDTH = $clog2(N)
+        parameter NUM_COL_WIDTH = $clog2(N)
     )
     (
         input signed [I_WIDTH + F_WIDTH -1 : 0] in_data_i,
-        input [COL_WIDTH - 1 : 0] number_of_columns_i,
+        input [NUM_COL_WIDTH - 1 : 0] number_of_columns_i,
         input number_of_columns_rst_i,
         input number_of_columns_ld_i,
         input clk_i,
         input out_reg_shift_rst_i,
-        output reg [COL_WIDTH - 1 : 0] number_of_columns_o,
+        output reg [NUM_COL_WIDTH - 1 : 0] number_of_columns_o,
         output signed [I_WIDTH + F_WIDTH -1 : 0] out_data_o 
     );
         integer i; 

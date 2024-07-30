@@ -22,13 +22,13 @@
 
 module systolic_array
     #(
-        parameter N_ROWS_ARRAY = 6,
-        parameter N_COLS_ARRAY = 6,
+        parameter N_ROWS_ARRAY = 3,
+        parameter N_COLS_ARRAY = 32,
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
         parameter N = 3,
-        parameter LEN_TRANSFER = 8,
-        parameter MAX_LEN_TRANSFER = 8,
+        parameter LEN_TRANSFER = 16,
+        parameter MAX_LEN_TRANSFER = 16,
         parameter SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER),
         
         parameter ADDRS_WIDTH = $clog2(N-1),
@@ -47,14 +47,10 @@ module systolic_array
         input mreg_addrs_rst_i,
         input mreg_start_i,
         input [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_i[0 : N_ROWS_ARRAY - 1],
-
         input en_adder_1_i[0 : N_ROWS_ARRAY - 1],
-
-
-
         input en_adder_2_i[0 : N_ROWS_ARRAY - 1],
-
-
+        input [NUM_COL_WIDTH - 1 : 0] number_of_columns_i[0 : N_ROWS_ARRAY - 1],
+        input en_adder_node_i[0 : N_COLS_ARRAY - 1],
 
 
         output signed [F_WIDTH + I_WIDTH - 1 : 0] result [0 : N_COLS_ARRAY - 1]
@@ -68,9 +64,110 @@ module systolic_array
         wire signed [F_WIDTH - 1 : 0] f_weight [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr [0 : N_ROWS_ARRAY - 1] [1 : N_COLS_ARRAY -1];
         wire [NUM_COL_WIDTH - 1 : 0] column_num [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
+        wire [NUM_COL_WIDTH - 1 : 0] number_of_columns [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire [SEL_WIDTH - 1: 0] f_sel [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire en_adder_1 [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire en_adder_2 [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
+        wire en_adder_node [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
+        
+        
+        genvar a, b;
+        generate
+            for (a = 0; a < N_ROWS_ARRAY; a = a + 1) begin
+                for (b = 0; b < N_COLS_ARRAY; b = b + 1) begin
+                    if (b == 0) begin    
+                        out_reg_shift
+                        #(
+                            .I_WIDTH(I_WIDTH),
+                            .F_WIDTH(F_WIDTH),
+                            .N(N),
+                            .NUM_COL_WIDTH(NUM_COL_WIDTH)
+                        )
+                        out_shift_block
+                        (
+                            .in_data_i(output_pe[a][b]),
+                            .number_of_columns_i(number_of_columns_i[a]),
+                            .number_of_columns_rst_i(rst_i),
+                            .number_of_columns_ld_i(wr_en_i),
+                            .clk_i(clk_i),
+                            .out_reg_shift_rst_i(rst_i),
+                            .number_of_columns_o(number_of_columns[a][b]),
+                            .out_data_o(out_reg_shift[a][b])
+                        );
+                        
+                    end else begin
+                        out_reg_shift
+                        #(
+                            .I_WIDTH(I_WIDTH),
+                            .F_WIDTH(F_WIDTH),
+                            .N(N),
+                            .NUM_COL_WIDTH(NUM_COL_WIDTH)
+                        )
+                        out_shift_block
+                        (
+                            .in_data_i(output_pe[a][b]),
+                            .number_of_columns_i(number_of_columns[a][b-1]),
+                            .number_of_columns_rst_i(rst_i),
+                            .number_of_columns_ld_i(wr_en_i),
+                            .clk_i(clk_i),
+                            .out_reg_shift_rst_i(rst_i),
+                            .number_of_columns_o(number_of_columns[a][b]),
+                            .out_data_o(out_reg_shift[a][b])
+                        );
+                    end
+                end
+            
+            end 
+        
+        endgenerate 
+        genvar c, d;
+        generate
+            for (c = 0; c < N_ROWS_ARRAY; c = c + 1) begin
+                for (d = 0; d < N_COLS_ARRAY; d = d + 1) begin
+                    if (c == 0) begin    
+                        vertical_node
+                        #(
+                            .I_WIDTH(I_WIDTH),
+                            .F_WIDTH(F_WIDTH)
+                        )
+                        node_block
+                        (
+                            .top_node_data_i(0),
+                            .mux_data_i(out_mux[c][d]),
+                            .en_adder_node_i(en_adder_node_i[d]),
+                            .clk_i(clk_i),
+                            .node_rst_i(rst_i),
+                            .en_adder_node_rst_i(rst_i),
+                            .en_adder_node_ld_i(wr_en_i),
+                            .node_ld_i(wr_en_i),
+                            .en_adder_node_o(en_adder_node[c][d]),
+                            .out_node_o(out_node[c][d])
+                        );
+                    end else begin
+                        vertical_node
+                        #(
+                            .I_WIDTH(I_WIDTH),
+                            .F_WIDTH(F_WIDTH)
+                        )
+                        node_block
+                        (
+                            .top_node_data_i(out_node[c - 1][d]),
+                            .mux_data_i(out_mux[c][d]),
+                            .en_adder_node_i(en_adder_node[c - 1][d]),
+                            .clk_i(clk_i),
+                            .node_rst_i(rst_i),
+                            .en_adder_node_rst_i(rst_i),
+                            .en_adder_node_ld_i(wr_en_i),
+                            .node_ld_i(wr_en_i),
+                            .en_adder_node_o(en_adder_node[c][d]),
+                            .out_node_o(out_node[c][d])
+                        );    
+                    end
+                end
+            
+            end 
+        assign result = out_node [N_ROWS_ARRAY - 1][0 : N_COLS_ARRAY -1];
+        endgenerate 
         
         genvar x, y;
         generate 

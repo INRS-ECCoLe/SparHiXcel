@@ -30,17 +30,42 @@ module control
     (
         input [NUM_COL_WIDTH - 1 : 0] column_num_i, // 1 2 3 4 ...
         input clk_i,
-        input column_num_rst_i,// internal
-        input column_num_ld_i, // internal
-        input mreg_start_i,
-        input mreg_addrs_rst_i, //works as initializer for the address
+        //input column_num_rst_i,
+        //input column_num_ld_i, 
+        //input mreg_start_i,
+        //input mreg_addrs_rst_i, 
         input [SEL_WIDTH - 1: 0] f_sel_i,
-        input f_sel_rst_i,
-        input f_sel_ld_i,
+        //input f_sel_rst_i,
+        //input f_sel_ld_i,
         input en_adder_1_i,
-        input en_adder_rst_i,
-        input en_adder_ld_i,
+        //input en_adder_rst_i,
+        //input en_adder_ld_i,
         input en_adder_2_i,
+        input rst_i,
+        input load_i,
+        input ready_i,
+        input start_op_i,
+        output reg freg_rst_o,//new
+        output reg freg_ld_o,
+        output reg wreg_rst_o,
+        output reg wreg_wr_en_o,
+        output reg mreg_rst_o,
+        output reg mreg_wr_en_o,
+        output reg oreg_1_rst_o,
+        output reg oreg_1_ld_o,
+        output reg oreg_2_rst_o,
+        output reg oreg_2_ld_o,
+        
+        output reg sel_mux_tr_rst_o,
+        output reg sel_mux_tr_ld_o,
+        output reg number_of_columns_rst_o,
+        output reg number_of_columns_ld_o,
+        output reg out_reg_shift_rst_o,
+        output reg node_rst_o,
+        output reg node_ld_o,
+        output reg path_node_rst_o,
+        output reg path_node_ld_o,
+        
         output reg en_adder_1_o,
         output reg en_adder_2_o,
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o,
@@ -48,15 +73,212 @@ module control
         output reg [ADDRS_WIDTH - 1 : 0] mreg_wr_addrs_o,
         output [ADDRS_WIDTH - 1 : 0] mreg_rd_addrs_o
     );
-    
+        
+        reg mreg_addrs_rst, mreg_start,
+         f_sel_rst, f_sel_ld,
+         column_num_rst, column_num_ld,
+         en_adder_rst, en_adder_ld;
+         
+        localparam [1:0]
+            reset = 2'b00 , load = 2'b01,
+            ready = 2'b10 , start = 2'b11;
+        reg [1:0] p_state, n_state;
+        
+        //State Machine
+        
+        always @(p_state or rst_i or load_i or ready_i or start_op_i) begin: state_transition
+            case(p_state)
+                reset:
+                    if (load_i == 1 && rst_i == 0) n_state = load;
+                    else n_state = reset;
+                load:
+                    if (ready_i == 1 && load_i == 0) n_state = ready;
+                    else n_state = load;
+                ready:
+                    if (start_op_i == 1 && ready_i == 0) n_state = start;
+                    else n_state = ready;
+                start:
+                    if (rst_i == 1) n_state = reset;
+                    else n_state = start;
+                default:
+                    n_state = reset;
+            endcase
+        
+        end
+        
+        always @(p_state or rst_i or load_i or ready_i or start_op_i) begin: output_assignments
+            case(p_state)
+                reset: begin
+                    freg_rst_o = 1;
+                    wreg_rst_o = 1;
+                    mreg_rst_o = 1;
+                    f_sel_rst = 1;
+                    oreg_1_rst_o = 1;
+                    oreg_2_rst_o = 1;
+                    column_num_rst = 1;
+                    mreg_addrs_rst = 1;
+                    en_adder_rst = 1;
+                    freg_ld_o = 0;
+                    f_sel_ld = 0;
+                    column_num_ld = 0;
+                    wreg_wr_en_o = 0;
+                    mreg_wr_en_o = 0;
+                    oreg_1_ld_o = 0;
+                    oreg_2_ld_o = 0;
+                    en_adder_ld = 0;
+                    mreg_start = 0; 
+                    
+                    sel_mux_tr_rst_o = 1;
+                    number_of_columns_rst_o = 1;
+                    node_rst_o = 1;
+                    path_node_rst_o = 1;
+                    out_reg_shift_rst_o = 1;
+                    sel_mux_tr_ld_o = 0;
+                    number_of_columns_ld_o = 0;
+                    node_ld_o = 0;
+                    path_node_ld_o = 0;
+                end       
+                load: begin
+                    freg_rst_o = 0;
+                    wreg_rst_o=0;
+                    mreg_rst_o = 0;
+                    f_sel_rst = 0;
+                    oreg_1_rst_o = 0;
+                    oreg_2_rst_o = 0;
+                    column_num_rst = 0;
+                    mreg_addrs_rst = 0;
+                    en_adder_rst = 0;
+                    freg_ld_o = 0;
+                    f_sel_ld = 1;
+                    column_num_ld = 1;
+                    wreg_wr_en_o = 1;
+                    mreg_wr_en_o = 0;
+                    oreg_1_ld_o = 0;
+                    oreg_2_ld_o = 0;
+                    en_adder_ld = 1;
+                    mreg_start = 0;
+                    
+                    sel_mux_tr_rst_o = 0;
+                    number_of_columns_rst_o = 0;
+                    node_rst_o = 0;
+                    path_node_rst_o = 0;
+                    out_reg_shift_rst_o = 0;
+                    sel_mux_tr_ld_o = 1;
+                    number_of_columns_ld_o = 1;
+                    node_ld_o = 0;
+                    path_node_ld_o = 1;
+                end
+                ready: begin
+                    freg_rst_o = 0;
+                    wreg_rst_o=0;
+                    mreg_rst_o = 0;
+                    f_sel_rst = 0;
+                    oreg_1_rst_o = 0;
+                    oreg_2_rst_o = 0;
+                    column_num_rst = 0;
+                    mreg_addrs_rst = 0;
+                    en_adder_rst = 0;
+                    freg_ld_o = 1;
+                    f_sel_ld = 0;
+                    column_num_ld = 0;
+                    wreg_wr_en_o = 0;
+                    mreg_wr_en_o = 0;
+                    oreg_1_ld_o = 0;
+                    oreg_2_ld_o = 0;
+                    en_adder_ld = 0;
+                    mreg_start = 0;
+                    
+                    sel_mux_tr_rst_o = 0;
+                    number_of_columns_rst_o = 0;
+                    node_rst_o = 0;
+                    path_node_rst_o = 0;
+                    out_reg_shift_rst_o = 0;
+                    sel_mux_tr_ld_o = 0;
+                    number_of_columns_ld_o = 0;
+                    node_ld_o = 0;
+                    path_node_ld_o = 0;    
+                end
+                start: begin
+                    freg_rst_o = 0;
+                    wreg_rst_o=0;
+                    mreg_rst_o = 0;
+                    f_sel_rst = 0;
+                    oreg_1_rst_o = 0;
+                    oreg_2_rst_o = 0;
+                    column_num_rst = 0;
+                    mreg_addrs_rst = 0;
+                    en_adder_rst = 0;
+                    freg_ld_o = 1;
+                    f_sel_ld = 0;
+                    column_num_ld = 0;
+                    wreg_wr_en_o = 0;
+                    mreg_wr_en_o = 1;
+                    oreg_1_ld_o = 1;
+                    oreg_2_ld_o = 1;
+                    en_adder_ld = 0;
+                    mreg_start = 1; 
+                    
+                    sel_mux_tr_rst_o = 0;
+                    number_of_columns_rst_o = 0;
+                    node_rst_o = 0;
+                    path_node_rst_o = 0;
+                    out_reg_shift_rst_o = 0;
+                    sel_mux_tr_ld_o = 0;
+                    number_of_columns_ld_o = 0;
+                    node_ld_o = 1;
+                    path_node_ld_o = 0;      
+                end
+                default: begin
+                    freg_rst_o = 1;
+                    wreg_rst_o = 1;
+                    mreg_rst_o = 1;
+                    f_sel_rst = 1;
+                    oreg_1_rst_o = 1;
+                    oreg_2_rst_o = 1;
+                    column_num_rst = 1;
+                    mreg_addrs_rst = 1;
+                    en_adder_rst = 1;
+                    freg_ld_o = 0;
+                    f_sel_ld = 0;
+                    column_num_ld = 0;
+                    wreg_wr_en_o = 0;
+                    mreg_wr_en_o = 0;
+                    oreg_1_ld_o = 0;
+                    oreg_2_ld_o = 0;
+                    en_adder_ld = 0;
+                    mreg_start = 0; 
+                    
+                    sel_mux_tr_rst_o = 1;
+                    number_of_columns_rst_o = 1;
+                    node_rst_o = 1;
+                    path_node_rst_o = 1;
+                    out_reg_shift_rst_o = 1;
+                    sel_mux_tr_ld_o = 0;
+                    number_of_columns_ld_o = 0;
+                    node_ld_o = 0;
+                    path_node_ld_o = 0;  
+                end    
+            endcase
+        
+        
+        end
+        
+        always @ (posedge clk_i) begin: sequential
+            if (rst_i) p_state <= reset;
+            else p_state <= n_state;     
+        end
+            
+        //End of state machione
+         
+        
         always @ (posedge clk_i) begin 
-            if (mreg_addrs_rst_i) begin 
+            if (mreg_addrs_rst) begin 
                 if (column_num_o < N) begin
                     mreg_wr_addrs_o <= column_num_o - 1;
                 end else begin
                     mreg_wr_addrs_o <= 0;
                 end
-            end  else if (mreg_start_i) begin
+            end  else if (mreg_start) begin
                 if (mreg_wr_addrs_o == 0) begin
                     mreg_wr_addrs_o <= N - 2;
                 end else begin 
@@ -68,12 +290,12 @@ module control
         assign mreg_rd_addrs_o = ( mreg_wr_addrs_o == (N - 2) ) ? 0 : (mreg_wr_addrs_o + 1) ;    
         
         // REGISTER FOR F_SEL_I
-        always @ (posedge clk_i or posedge f_sel_rst_i) begin 
+        always @ (posedge clk_i or posedge f_sel_rst) begin 
         
-            if (f_sel_rst_i) begin
+            if (f_sel_rst) begin
                 f_sel_o <= 0;
                 
-            end else if (f_sel_ld_i) begin
+            end else if (f_sel_ld) begin
              
                     f_sel_o <= f_sel_i;
                 
@@ -81,12 +303,12 @@ module control
         end
         
          // REGISTER FOR column_num_i
-        always @ (posedge clk_i or posedge column_num_rst_i) begin 
+        always @ (posedge clk_i or posedge column_num_rst) begin 
         
-            if (column_num_rst_i) begin
+            if (column_num_rst) begin
                 column_num_o <= 0;
                 
-            end else if (column_num_ld_i) begin
+            end else if (column_num_ld) begin
              
                     column_num_o <= column_num_i;
                 
@@ -94,12 +316,12 @@ module control
         end
         
         // REGISTER FOR en_adder_1_i
-        always @ (posedge clk_i or posedge en_adder_rst_i) begin 
+        always @ (posedge clk_i or posedge en_adder_rst) begin 
         
-            if (en_adder_rst_i) begin
+            if (en_adder_rst) begin
                 en_adder_1_o <= 0;
                 
-            end else if (en_adder_ld_i) begin
+            end else if (en_adder_ld) begin
              
                     en_adder_1_o <= en_adder_1_i;
                 
@@ -107,12 +329,12 @@ module control
         end
         
         // REGISTER FOR en_adder_2_i
-        always @ (posedge clk_i or posedge en_adder_rst_i) begin 
+        always @ (posedge clk_i or posedge en_adder_rst) begin 
         
-            if (en_adder_rst_i) begin
+            if (en_adder_rst) begin
                 en_adder_2_o <= 0;
                 
-            end else if (en_adder_ld_i) begin
+            end else if (en_adder_ld) begin
              
                     en_adder_2_o <= en_adder_2_i;
                 

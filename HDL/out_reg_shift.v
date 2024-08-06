@@ -41,7 +41,7 @@ module out_reg_shift
    
         always @(posedge clk_i or posedge out_reg_shift_rst_i) begin
             if (out_reg_shift_rst_i) begin
-                for(i = 0 ; i < N ; i = i + 1) begin
+                for(i = 0 ; i < N - 1 ; i = i + 1) begin
                     reg_shift[i] <= {I_WIDTH + F_WIDTH{1'b0}}; 
                 end
             end else begin 

@@ -32,30 +32,45 @@ module pe
     (
         input signed [I_WIDTH - 1: 0] in_feature_i,
         input [SEL_WIDTH - 1: 0] f_sel_i,
-        input f_sel_rst_i,
-        input f_sel_ld_i,
-        input freg_rst_i,
+//        input f_sel_rst_i,
+//        input f_sel_ld_i,
+//        input freg_rst_i,
+        input rst_i,
+        input load_i,
+        input ready_i,
+        input start_op_i,
         input clk_i,
         input signed [F_WIDTH - 1 : 0] f_weight_i,
-        input wreg_rst_i,
-        input wreg_wr_en_i,
+//        input wreg_rst_i,
+//        input wreg_wr_en_i,
         input [NUM_COL_WIDTH - 1 : 0] column_num_i,
-        input column_num_rst_i,
-        input column_num_ld_i,
-        input mreg_addrs_rst_i,
-        input mreg_start_i,
-        input mreg_rst_i,
-        input mreg_wr_en_i,
+//        input column_num_rst_i,
+//        input column_num_ld_i,
+//        input mreg_addrs_rst_i,
+//        input mreg_start_i,
+//        input mreg_rst_i,
+//        input mreg_wr_en_i,
         input signed [I_WIDTH + F_WIDTH - 1 : 0] top_pe_in_i,
         input en_adder_1_i,
-        input en_adder_rst_i,
-        input en_adder_ld_i,
-        input oreg_1_rst_i,
-        input oreg_1_ld_i,
+//        input en_adder_rst_i,
+//        input en_adder_ld_i,
+//        input oreg_1_rst_i,
+//        input oreg_1_ld_i,
         input signed [I_WIDTH + F_WIDTH - 1 : 0] left_pe_in_i,
         input en_adder_2_i,
-        input oreg_2_rst_i,
-        input oreg_2_ld_i,
+//        input oreg_2_rst_i,
+//        input oreg_2_ld_i,
+
+        output sel_mux_tr_rst_o,
+        output sel_mux_tr_ld_o,
+        output number_of_columns_rst_o,
+        output number_of_columns_ld_o,
+        output out_reg_shift_rst_o,
+        output node_rst_o,
+        output node_ld_o,
+        output path_node_rst_o,
+        output path_node_ld_o,
+
         output en_adder_1_o,
         output en_adder_2_o,
         output [NUM_COL_WIDTH - 1 : 0] column_num_o,
@@ -72,6 +87,16 @@ module pe
         wire signed [I_WIDTH + F_WIDTH - 1 : 0] sum_1;
         wire signed [F_WIDTH + I_WIDTH - 1 : 0] o_reg_1 = down_pe_o;
         wire signed [I_WIDTH + F_WIDTH - 1 : 0] sum_2;
+        wire freg_rst;
+        wire freg_ld;
+        wire wreg_rst;
+        wire wreg_wr_en;
+        wire mreg_rst;
+        wire mreg_wr_en;
+        wire oreg_1_rst;
+        wire oreg_1_ld;
+        wire oreg_2_rst;
+        wire oreg_2_ld;
         
         //feature_block
         in_shift_reg 
@@ -84,7 +109,8 @@ module pe
         (
             .in_feature_i(in_feature_i),
             .f_sel_i(f_sel_o),
-            .freg_rst_i(freg_rst_i),
+            .freg_rst_i(freg_rst),
+            .freg_ld_i(freg_ld),
             .clk_i(clk_i),
             .out_feature_o(out_feature)
         );
@@ -98,8 +124,8 @@ module pe
        (
             .f_weight_i(f_weight_i),
             .clk_i(clk_i),
-            .wreg_rst_i(wreg_rst_i),
-            .wreg_wr_en_i(wreg_wr_en_i),
+            .wreg_rst_i(wreg_rst),
+            .wreg_wr_en_i(wreg_wr_en),
             .f_weight_o(f_weight_o)
        ); 
        //multiply_block 
@@ -126,17 +152,42 @@ module pe
         (
             .column_num_i(column_num_i),
             .clk_i(clk_i),
-            .column_num_rst_i(column_num_rst_i),
-            .column_num_ld_i(column_num_ld_i),
-            .mreg_addrs_rst_i(mreg_addrs_rst_i),
-            .mreg_start_i(mreg_start_i),
+//            .column_num_rst_i(column_num_rst_i),
+//            .column_num_ld_i(column_num_ld_i),
+//            .mreg_addrs_rst_i(mreg_addrs_rst_i),
+//            .mreg_start_i(mreg_start_i),
             .f_sel_i(f_sel_i),
-            .f_sel_rst_i(f_sel_rst_i),
-            .f_sel_ld_i(f_sel_ld_i),
+//            .f_sel_rst_i(f_sel_rst_i),
+//            .f_sel_ld_i(f_sel_ld_i),
             .en_adder_1_i(en_adder_1_i),
             .en_adder_2_i(en_adder_2_i),
-            .en_adder_rst_i(en_adder_rst_i),
-            .en_adder_ld_i(en_adder_ld_i),
+//            .en_adder_rst_i(en_adder_rst_i),
+//            .en_adder_ld_i(en_adder_ld_i),
+            .rst_i(rst_i),
+            .load_i(load_i),
+            .ready_i(ready_i),
+            .start_op_i(start_op_i),
+            .freg_rst_o(freg_rst),//new
+            .freg_ld_o(freg_ld),
+            .wreg_rst_o(wreg_rst),
+            .wreg_wr_en_o(wreg_wr_en),
+            .mreg_rst_o(mreg_rst),
+            .mreg_wr_en_o(mreg_wr_en),
+            .oreg_1_rst_o(oreg_1_rst),
+            .oreg_1_ld_o(oreg_1_ld),
+            .oreg_2_rst_o(oreg_2_rst),
+            .oreg_2_ld_o(oreg_2_ld),
+            
+            .sel_mux_tr_rst_o(sel_mux_tr_rst_o),
+            .sel_mux_tr_ld_o(sel_mux_tr_ld_o),
+            .number_of_columns_rst_o(number_of_columns_rst_o),
+            .number_of_columns_ld_o(number_of_columns_ld_o),
+            .out_reg_shift_rst_o(out_reg_shift_rst_o),
+            .node_rst_o(node_rst_o),
+            .node_ld_o(node_ld_o),
+            .path_node_rst_o(path_node_rst_o),
+            .path_node_ld_o(path_node_ld_o),
+            
             .en_adder_1_o(en_adder_1_o),
             .en_adder_2_o(en_adder_2_o),
             .column_num_o(column_num_o),
@@ -159,8 +210,8 @@ module pe
             .mreg_wr_addrs_i(mreg_wr_addrs),
             .mreg_rd_addrs_i(mreg_rd_addrs),
             .clk_i(clk_i),
-            .mreg_rst_i(mreg_rst_i),
-            .mreg_wr_en_i(mreg_wr_en_i),
+            .mreg_rst_i(mreg_rst),
+            .mreg_wr_en_i(mreg_wr_en),
             .rd_data_o(result_mul_to_adder)
        ); 
         
@@ -189,8 +240,8 @@ module pe
        (
             .wr_data_i(sum_1),
             .clk_i(clk_i),
-            .oreg_rst_i(oreg_1_rst_i),
-            .oreg_wr_en_i(oreg_1_ld_i),
+            .oreg_rst_i(oreg_1_rst),
+            .oreg_wr_en_i(oreg_1_ld),
             .rd_data_o(down_pe_o)
        );
        
@@ -219,8 +270,8 @@ module pe
        (
             .wr_data_i(sum_2),
             .clk_i(clk_i),
-            .oreg_rst_i(oreg_2_rst_i),
-            .oreg_wr_en_i(oreg_2_ld_i),
+            .oreg_rst_i(oreg_2_rst),
+            .oreg_wr_en_i(oreg_2_ld),
             .rd_data_o(output_pe_o)
        );
         

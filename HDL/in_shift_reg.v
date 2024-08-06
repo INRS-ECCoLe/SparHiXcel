@@ -31,6 +31,7 @@ module in_shift_reg
         input signed [I_WIDTH - 1: 0] in_feature_i,
         input [SEL_WIDTH - 1: 0] f_sel_i,
         input freg_rst_i,
+        input freg_ld_i,
         input clk_i,
         output signed [I_WIDTH - 1: 0] out_feature_o
     );
@@ -42,7 +43,7 @@ module in_shift_reg
                 for(i = 0 ; i < N ; i = i + 1) begin
                     shift_reg[i] <= {I_WIDTH{1'b0}}; 
                 end
-            end else begin
+            end else if (freg_ld_i) begin
                 for(i = N-1 ; i > 0 ; i = i - 1) begin
                     shift_reg[i] <= shift_reg[i - 1];
                 end

@@ -24,8 +24,8 @@ module mux_n_1
     #(
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
-        parameter LEN_TRANSFER = 8,
-        parameter MAX_LEN_TRANSFER = 8,
+        parameter LEN_TRANSFER = 10,
+        parameter MAX_LEN_TRANSFER = 10,
         parameter SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER)
         
     )

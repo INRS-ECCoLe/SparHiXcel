@@ -22,13 +22,13 @@
 
 module systolic_array
     #(
-        parameter N_ROWS_ARRAY = 1,
-        parameter N_COLS_ARRAY = 10,
+        parameter N_ROWS_ARRAY = 4,
+        parameter N_COLS_ARRAY = 4,
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
         parameter N = 3,
-        parameter LEN_TRANSFER = 10,
-        parameter MAX_LEN_TRANSFER = 10,
+        parameter LEN_TRANSFER = 4,
+        parameter MAX_LEN_TRANSFER = 4,
         parameter SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER),
         
         parameter ADDRS_WIDTH = $clog2(N-1),
@@ -37,15 +37,16 @@ module systolic_array
     )
     (
         input signed [I_WIDTH - 1: 0] in_feature_i [0 : N_ROWS_ARRAY - 1],
-        input [SEL_WIDTH - 1: 0] f_sel_i [0 : N_ROWS_ARRAY - 1],
+        input [SEL_WIDTH - 1: 0] f_sel_i [0 : N_ROWS_ARRAY - 1], // you can determine f_sel_i by how many a weight shifted to right in an elastic group. f_sel_i= number of shifted location of an element of weights in an elastic group
         input rst_i,
         input load_i,
         input ready_i,
-        input start_op_i,
+        input start_op_i[0 : N_ROWS_ARRAY - 1],
         input clk_i,
+        input [$clog2(N)-1 : 0]filter_size_i,
         input signed [F_WIDTH - 1 : 0] f_weight_i [0 : N_COLS_ARRAY - 1],
         //input wr_en_i,
-        input [NUM_COL_WIDTH - 1 : 0] column_num_i [0 : N_ROWS_ARRAY - 1],
+        input [NUM_COL_WIDTH - 1 : 0] column_num_i [0 : N_ROWS_ARRAY - 1], // it indicates that that pe is located in which column of the elastic group
         //input mreg_addrs_rst_i,
         //input mreg_start_i,
         input [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_i[0 : N_ROWS_ARRAY - 1],
@@ -77,16 +78,19 @@ module systolic_array
         wire number_of_columns_rst[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire number_of_columns_ld[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire out_reg_shift_rst[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
+        wire out_reg_shift_ld[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire node_rst[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire node_ld[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire path_node_rst[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire path_node_ld[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         
+        
         genvar a, b;
         generate
             for (a = 0; a < N_ROWS_ARRAY; a = a + 1) begin
                 for (b = 0; b < N_COLS_ARRAY; b = b + 1) begin
-                    if (b == 0) begin    
+                    assign out_reg_shift_ld[a][b] = 1;//(column_num[a][b] == number_of_columns[a][b]) && ((a+1) % filter_size_i == 0);
+                    if (b == 0) begin 
                         out_reg_shift
                         #(
                             .I_WIDTH(I_WIDTH),
@@ -102,6 +106,8 @@ module systolic_array
                             .number_of_columns_ld_i(number_of_columns_ld[a][b]),
                             .clk_i(clk_i),
                             .out_reg_shift_rst_i(out_reg_shift_rst[a][b]),
+                            .out_reg_shift_ld_i(out_reg_shift_ld[a][b]),
+                            .filter_size_i(filter_size_i),
                             .number_of_columns_o(number_of_columns[a][b]),
                             .out_data_o(out_reg_shift[a][b])
                         );
@@ -122,6 +128,8 @@ module systolic_array
                             .number_of_columns_ld_i(number_of_columns_ld[a][b]),
                             .clk_i(clk_i),
                             .out_reg_shift_rst_i(out_reg_shift_rst[a][b]),
+                            .out_reg_shift_ld_i(out_reg_shift_ld[a][b]),
+                            .filter_size_i(filter_size_i),
                             .number_of_columns_o(number_of_columns[a][b]),
                             .out_data_o(out_reg_shift[a][b])
                         );
@@ -143,7 +151,7 @@ module systolic_array
                         )
                         node_block
                         (
-                            .top_node_data_i(0),
+                            .top_node_data_i(16'b0),
                             .mux_data_i(out_mux[c][d]),
                             .en_adder_node_i(en_adder_node_i[d]),
                             .sel_mux_node_i(sel_mux_node_i[d]),
@@ -199,36 +207,36 @@ module systolic_array
                                 .SEL_WIDTH(SEL_WIDTH), 
                                 .NUM_COL_WIDTH(NUM_COL_WIDTH)
                             )
-                            pe_unit
+                            pe_unit 
                             (
                                 .in_feature_i(in_feature_i[x]),
-                                .f_sel_i(f_sel_i[0]),
+                                .f_sel_i(f_sel_i[x]),
                                 //.f_sel_rst_i(rst_i),
                                 //.f_sel_ld_i(wr_en_i),
                                 //.freg_rst_i(rst_i),
                                 .rst_i(rst_i),
                                 .load_i(load_i),
                                 .ready_i(ready_i),
-                                .start_op_i(start_op_i),
+                                .start_op_i(start_op_i[x]),
                                 .clk_i(clk_i),
                                 .f_weight_i(f_weight_i[y]),
                                 //.wreg_rst_i(rst_i),
                                 //.wreg_wr_en_i(wr_en_i),
-                                .column_num_i(column_num_i[0]),
+                                .column_num_i(column_num_i[x]),
                                 //.column_num_rst_i(rst_i),
                                 //.column_num_ld_i(wr_en_i),
                                 //.mreg_addrs_rst_i(mreg_addrs_rst_i),
                                 //.mreg_start_i(mreg_start_i),
                                 //.mreg_rst_i(rst_i),
                                 //.mreg_wr_en_i(wr_en_i),
-                                .top_pe_in_i(0),
-                                .en_adder_1_i(en_adder_1_i[0]),
+                                .top_pe_in_i(16'b0),
+                                .en_adder_1_i(en_adder_1_i[x]),
                                 //.en_adder_rst_i(rst_i),
                                 //.en_adder_ld_i(wr_en_i),
                                 //.oreg_1_rst_i(rst_i),
                                 //.oreg_1_ld_i(wr_en_i),
-                                .left_pe_in_i(0),
-                                .en_adder_2_i(en_adder_2_i[0]),
+                                .left_pe_in_i(16'b0),
+                                .en_adder_2_i(en_adder_2_i[x]),
                                 //.oreg_2_rst_i(rst_i),
                                 //.oreg_2_ld_i(wr_en_i),
                                 
@@ -270,7 +278,7 @@ module systolic_array
                                 .rst_i(rst_i),
                                 .load_i(load_i),
                                 .ready_i(ready_i),
-                                .start_op_i(start_op_i),
+                                .start_op_i(start_op_i[x]),
                                 .clk_i(clk_i),
                                 .f_weight_i(f_weight_i[y]),
 //                                .wreg_rst_i(rst_i),
@@ -282,7 +290,7 @@ module systolic_array
 //                                .mreg_start_i(mreg_start_i),
 //                                .mreg_rst_i(rst_i),
 //                                .mreg_wr_en_i(wr_en_i),
-                                .top_pe_in_i(0),
+                                .top_pe_in_i(16'b0),
                                 .en_adder_1_i(en_adder_1[x][y-1]),
 //                                .en_adder_rst_i(rst_i),
 //                                .en_adder_ld_i(wr_en_i),
@@ -323,7 +331,7 @@ module systolic_array
                                 .SEL_WIDTH(SEL_WIDTH), 
                                 .NUM_COL_WIDTH(NUM_COL_WIDTH)
                             )
-                            pe_unit
+                            pe_unit 
                             (
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel_i[x]),
@@ -333,7 +341,7 @@ module systolic_array
                                 .rst_i(rst_i),
                                 .load_i(load_i),
                                 .ready_i(ready_i),
-                                .start_op_i(start_op_i),
+                                .start_op_i(start_op_i[x]),
                                 .clk_i(clk_i),
                                 .f_weight_i(f_weight[x-1][y]),
 //                                .wreg_rst_i(rst_i),
@@ -351,7 +359,7 @@ module systolic_array
 //                                .en_adder_ld_i(wr_en_i),
 //                                .oreg_1_rst_i(rst_i),
 //                                .oreg_1_ld_i(wr_en_i),
-                                .left_pe_in_i(0),
+                                .left_pe_in_i(16'b0),
                                 .en_adder_2_i(en_adder_2_i[x]),
 //                                .oreg_2_rst_i(rst_i),
 //                                .oreg_2_ld_i(wr_en_i),
@@ -394,7 +402,7 @@ module systolic_array
                                 .rst_i(rst_i),
                                 .load_i(load_i),
                                 .ready_i(ready_i),
-                                .start_op_i(start_op_i),
+                                .start_op_i(start_op_i[x]),
                                 .clk_i(clk_i),
                                 .f_weight_i(f_weight[x-1][y]),
 //                                .wreg_rst_i(rst_i),

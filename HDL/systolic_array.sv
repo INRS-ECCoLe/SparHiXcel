@@ -31,13 +31,14 @@ module systolic_array
         parameter MAX_LEN_TRANSFER = 4,
         parameter SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER),
         
-        parameter ADDRS_WIDTH = $clog2(N-1),
+        parameter ADDRS_WIDTH = $clog2(N),
         parameter SEL_WIDTH = $clog2(N),
-        parameter NUM_COL_WIDTH = $clog2(N)
+        parameter NUM_COL_WIDTH = $clog2(N+1)
     )
     (
         input signed [I_WIDTH - 1: 0] in_feature_i [0 : N_ROWS_ARRAY - 1],
         input [SEL_WIDTH - 1: 0] f_sel_i [0 : N_ROWS_ARRAY - 1], // you can determine f_sel_i by how many a weight shifted to right in an elastic group. f_sel_i= number of shifted location of an element of weights in an elastic group
+        input [NUM_COL_WIDTH -1 : 0]row_num_i [0 : N_ROWS_ARRAY - 1],
         input rst_i,
         input load_i,
         input ready_i,
@@ -211,6 +212,7 @@ module systolic_array
                             (
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel_i[x]),
+                                .row_num_i(row_num_i[x]),
                                 //.f_sel_rst_i(rst_i),
                                 //.f_sel_ld_i(wr_en_i),
                                 //.freg_rst_i(rst_i),
@@ -272,6 +274,7 @@ module systolic_array
                             (
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel[x][y-1]),
+                                .row_num_i(row_num_i[x]),
 //                                .f_sel_rst_i(rst_i),
 //                                .f_sel_ld_i(wr_en_i),
 //                                .freg_rst_i(rst_i),
@@ -335,6 +338,7 @@ module systolic_array
                             (
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel_i[x]),
+                                .row_num_i(row_num_i[x]),
 //                                .f_sel_rst_i(rst_i),
 //                                .f_sel_ld_i(wr_en_i),
 //                                .freg_rst_i(rst_i),
@@ -396,6 +400,7 @@ module systolic_array
                             (
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel[x][y-1]),
+                                .row_num_i(row_num_i[x]),
 //                                .f_sel_rst_i(rst_i),
 //                                .f_sel_ld_i(wr_en_i),
 //                                .freg_rst_i(rst_i),

@@ -24,7 +24,7 @@ module out_reg_shift
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
         parameter N = 3,
-        parameter NUM_COL_WIDTH = $clog2(N)
+        parameter NUM_COL_WIDTH = $clog2(N+1)
     )
     (
         input signed [I_WIDTH + F_WIDTH -1 : 0] in_data_i,

@@ -25,9 +25,9 @@ module pe
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
         parameter N = 3,
-        parameter ADDRS_WIDTH = $clog2(N-1),
+        parameter ADDRS_WIDTH = $clog2(N),
         parameter SEL_WIDTH = $clog2(N), 
-        parameter NUM_COL_WIDTH = $clog2(N)
+        parameter NUM_COL_WIDTH = $clog2(N+1)
     )
     (
         input signed [I_WIDTH - 1: 0] in_feature_i,
@@ -40,6 +40,7 @@ module pe
         input ready_i,
         input start_op_i,
         input clk_i,
+        input [NUM_COL_WIDTH -1 : 0]row_num_i,
         input signed [F_WIDTH - 1 : 0] f_weight_i,
 //        input wreg_rst_i,
 //        input wreg_wr_en_i,
@@ -152,6 +153,7 @@ module pe
         (
             .column_num_i(column_num_i),
             .clk_i(clk_i),
+            .row_num_i(row_num_i),
 //            .column_num_rst_i(column_num_rst_i),
 //            .column_num_ld_i(column_num_ld_i),
 //            .mreg_addrs_rst_i(mreg_addrs_rst_i),

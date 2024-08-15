@@ -23,13 +23,14 @@
 module control
     #(
         parameter N = 3,
-        parameter ADDRS_WIDTH = $clog2(N-1),
-        parameter NUM_COL_WIDTH = $clog2(N),
+        parameter ADDRS_WIDTH = $clog2(N),
+        parameter NUM_COL_WIDTH = $clog2(N+1),
         parameter SEL_WIDTH = $clog2(N)
     )
     (
         input [NUM_COL_WIDTH - 1 : 0] column_num_i, // 1 2 3 4 ...
         input clk_i,
+        input [NUM_COL_WIDTH -1 : 0]row_num_i,
         //input column_num_rst_i,
         //input column_num_ld_i, 
         //input mreg_start_i,
@@ -71,7 +72,7 @@ module control
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o,
         output reg [SEL_WIDTH - 1: 0] f_sel_o,
         output reg [ADDRS_WIDTH - 1 : 0] mreg_wr_addrs_o,
-        output [ADDRS_WIDTH - 1 : 0] mreg_rd_addrs_o
+        output reg [ADDRS_WIDTH - 1 : 0] mreg_rd_addrs_o
     );
         
         reg mreg_addrs_rst, mreg_start,
@@ -273,22 +274,32 @@ module control
         
         always @ (posedge clk_i) begin 
             if (mreg_addrs_rst) begin 
-                if (column_num_o < N) begin
-                    mreg_wr_addrs_o <= column_num_o - 1;
-                end else begin
+                if(column_num_o - 1 == 0) begin
                     mreg_wr_addrs_o <= 0;
-                end
+                end else begin
+                    mreg_wr_addrs_o <= 1 + (N - column_num_o);
+                end  
             end  else if (mreg_start) begin
-                if (mreg_wr_addrs_o == 0) begin
-                    mreg_wr_addrs_o <= N - 2;
+                if (mreg_wr_addrs_o == N - 1) begin
+                    mreg_wr_addrs_o <= 0;
                 end else begin 
-                    mreg_wr_addrs_o <= mreg_wr_addrs_o - 1;
+                    mreg_wr_addrs_o <= mreg_wr_addrs_o + 1;
                 end
             end
        
         end
-        assign mreg_rd_addrs_o = ( mreg_wr_addrs_o == (N - 2) ) ? 0 : (mreg_wr_addrs_o + 1) ;    
-        
+        //assign mreg_rd_addrs_o = ( mreg_wr_addrs_o == 0 ) ? N - 1 - (row_num_i%N) : ( mreg_wr_addrs_o == 1 && (row_num_i%N) == 0 ) ? 0 : ( mreg_wr_addrs_o == 1 && (row_num_i%N) != 0 )? N - (row_num_i%N): ;    
+        always @ (*) begin
+            if (mreg_wr_addrs_o == 0) begin
+                mreg_rd_addrs_o <= N - 1 - (row_num_i - 1);    
+            end else begin
+                if (mreg_wr_addrs_o > (row_num_i - 1 )) begin
+                    mreg_rd_addrs_o <= mreg_wr_addrs_o - 1 - (row_num_i - 1);    
+                end else begin
+                    mreg_rd_addrs_o <= N - 1 + (mreg_wr_addrs_o - (row_num_i - 1));   
+                end
+            end
+        end
         // REGISTER FOR F_SEL_I
         always @ (posedge clk_i or posedge f_sel_rst) begin 
         

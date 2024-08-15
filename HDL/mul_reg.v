@@ -25,7 +25,7 @@ module mul_reg
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,
         parameter N = 3,
-        parameter ADDRS_WIDTH = $clog2(N-1)
+        parameter ADDRS_WIDTH = $clog2(N)
     )
     (
         input signed [I_WIDTH + F_WIDTH - 1 : 0] wr_data_i,
@@ -37,11 +37,11 @@ module mul_reg
         output signed [I_WIDTH + F_WIDTH - 1 : 0] rd_data_o
     );
         integer i;
-        reg signed [I_WIDTH + F_WIDTH - 1 : 0] memory [0 : N-2];
+        reg signed [I_WIDTH + F_WIDTH - 1 : 0] memory [0 : N-1];
         
         always @ (posedge clk_i or posedge mreg_rst_i) begin 
             if (mreg_rst_i) begin
-                for(i = 0 ; i < (N - 1) ; i = i + 1) begin
+                for(i = 0 ; i < N ; i = i + 1) begin
                     memory[i] <= {(I_WIDTH + F_WIDTH){1'b0}}; 
                 end
             end else if (mreg_wr_en_i) begin

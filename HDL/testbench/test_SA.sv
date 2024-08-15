@@ -32,12 +32,13 @@ module test_SA();
     parameter MAX_LEN_TRANSFER = 4;
     parameter SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
         
-    parameter ADDRS_WIDTH = $clog2(N-1);
+    parameter ADDRS_WIDTH = $clog2(N);
     parameter SEL_WIDTH = $clog2(N);
-    parameter NUM_COL_WIDTH = $clog2(N);
+    parameter NUM_COL_WIDTH = $clog2(N+1);
         
      reg signed [I_WIDTH - 1: 0] in_feature_i [0 : N_ROWS_ARRAY - 1];
      reg [SEL_WIDTH - 1: 0] f_sel_i [0 : N_ROWS_ARRAY - 1];
+     reg [NUM_COL_WIDTH -1 : 0]row_num_i [0 : N_ROWS_ARRAY - 1];
      reg rst_i;
      reg load_i;
      reg ready_i;
@@ -75,6 +76,7 @@ module test_SA();
     (
         .in_feature_i(in_feature_i),
         .f_sel_i(f_sel_i),
+        .row_num_i(row_num_i),
         .rst_i(rst_i),
         .load_i(load_i),
         .ready_i(ready_i),
@@ -110,6 +112,7 @@ module test_SA();
         end
         foreach (f_sel_i[i]) begin
             f_sel_i[i] = 0;   
+            
         end
      
         filter_size_i = 1;   
@@ -129,6 +132,9 @@ module test_SA();
             en_adder_2_i[i] = 0;   
         end
         
+        foreach (row_num_i[i]) begin
+            row_num_i[i] = 1;     
+        end
         foreach (en_adder_node_i[i]) begin
             if (i==0) en_adder_node_i[i] = 0;
             else if (i==1)en_adder_node_i[i] = 1;   

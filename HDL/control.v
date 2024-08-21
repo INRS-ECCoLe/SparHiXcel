@@ -31,6 +31,7 @@ module control
         input [NUM_COL_WIDTH - 1 : 0] column_num_i, // 1 2 3 4 ...
         input clk_i,
         input [NUM_COL_WIDTH -1 : 0]row_num_i,
+        input [$clog2(N+1)-1 : 0]filter_size_i,
         //input column_num_rst_i,
         //input column_num_ld_i, 
         //input mreg_start_i,
@@ -38,10 +39,10 @@ module control
         input [SEL_WIDTH - 1: 0] f_sel_i,
         //input f_sel_rst_i,
         //input f_sel_ld_i,
-        input en_adder_1_i,
+        //input en_adder_1_i,
         //input en_adder_rst_i,
         //input en_adder_ld_i,
-        input en_adder_2_i,
+        //input en_adder_2_i,
         input rst_i,
         input load_i,
         input ready_i,
@@ -67,8 +68,8 @@ module control
         output reg path_node_rst_o,
         output reg path_node_ld_o,
         
-        output reg en_adder_1_o,
-        output reg en_adder_2_o,
+        output  en_adder_1_o,
+        output  en_adder_2_o,
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o,
         output reg [SEL_WIDTH - 1: 0] f_sel_o,
         output reg [ADDRS_WIDTH - 1 : 0] mreg_wr_addrs_o,
@@ -77,8 +78,7 @@ module control
         
         reg mreg_addrs_rst, mreg_start,
          f_sel_rst, f_sel_ld,
-         column_num_rst, column_num_ld,
-         en_adder_rst, en_adder_ld;
+         column_num_rst, column_num_ld;
          
         localparam [1:0]
             reset = 2'b00 , load = 2'b01,
@@ -118,7 +118,7 @@ module control
                     oreg_2_rst_o = 1;
                     column_num_rst = 1;
                     mreg_addrs_rst = 1;
-                    en_adder_rst = 1;
+                    //en_adder_rst = 1;
                     freg_ld_o = 0;
                     f_sel_ld = 0;
                     column_num_ld = 0;
@@ -126,7 +126,7 @@ module control
                     mreg_wr_en_o = 0;
                     oreg_1_ld_o = 0;
                     oreg_2_ld_o = 0;
-                    en_adder_ld = 0;
+                    //en_adder_ld = 0;
                     mreg_start = 0; 
                     
                     sel_mux_tr_rst_o = 1;
@@ -148,7 +148,7 @@ module control
                     oreg_2_rst_o = 0;
                     column_num_rst = 0;
                     mreg_addrs_rst = 0;
-                    en_adder_rst = 0;
+                    //en_adder_rst = 0;
                     freg_ld_o = 0;
                     f_sel_ld = 1;
                     column_num_ld = 1;
@@ -156,7 +156,7 @@ module control
                     mreg_wr_en_o = 0;
                     oreg_1_ld_o = 0;
                     oreg_2_ld_o = 0;
-                    en_adder_ld = 1;
+                    //en_adder_ld = 1;
                     mreg_start = 0;
                     
                     sel_mux_tr_rst_o = 0;
@@ -178,7 +178,7 @@ module control
                     oreg_2_rst_o = 0;
                     column_num_rst = 0;
                     mreg_addrs_rst = 0;
-                    en_adder_rst = 0;
+                    //en_adder_rst = 0;
                     freg_ld_o = 1;
                     f_sel_ld = 0;
                     column_num_ld = 0;
@@ -186,7 +186,7 @@ module control
                     mreg_wr_en_o = 0;
                     oreg_1_ld_o = 0;
                     oreg_2_ld_o = 0;
-                    en_adder_ld = 0;
+                    //en_adder_ld = 0;
                     mreg_start = 0;
                     
                     sel_mux_tr_rst_o = 0;
@@ -208,7 +208,7 @@ module control
                     oreg_2_rst_o = 0;
                     column_num_rst = 0;
                     mreg_addrs_rst = 0;
-                    en_adder_rst = 0;
+                    //en_adder_rst = 0;
                     freg_ld_o = 1;
                     f_sel_ld = 0;
                     column_num_ld = 0;
@@ -216,7 +216,7 @@ module control
                     mreg_wr_en_o = 1;
                     oreg_1_ld_o = 1;
                     oreg_2_ld_o = 1;
-                    en_adder_ld = 0;
+                    //en_adder_ld = 0;
                     mreg_start = 1; 
                     
                     sel_mux_tr_rst_o = 0;
@@ -238,7 +238,7 @@ module control
                     oreg_2_rst_o = 1;
                     column_num_rst = 1;
                     mreg_addrs_rst = 1;
-                    en_adder_rst = 1;
+                    //en_adder_rst = 1;
                     freg_ld_o = 0;
                     f_sel_ld = 0;
                     column_num_ld = 0;
@@ -246,7 +246,7 @@ module control
                     mreg_wr_en_o = 0;
                     oreg_1_ld_o = 0;
                     oreg_2_ld_o = 0;
-                    en_adder_ld = 0;
+                    //en_adder_ld = 0;
                     mreg_start = 0; 
                     
                     sel_mux_tr_rst_o = 1;
@@ -325,7 +325,7 @@ module control
                 
             end
         end
-        
+        /*
         // REGISTER FOR en_adder_1_i
         always @ (posedge clk_i or posedge en_adder_rst) begin 
         
@@ -351,4 +351,9 @@ module control
                 
             end
         end
+        */
+        
+        //Generating en_adder_1_o and en_adder_2_o
+        assign en_adder_1_o = (row_num_i > 1) ? 1 : 0;
+        assign en_adder_2_o = (row_num_i == filter_size_i && column_num_o != 1)? 1 : 0;
 endmodule

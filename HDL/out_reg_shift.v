@@ -34,7 +34,7 @@ module out_reg_shift
         input clk_i,
         input out_reg_shift_rst_i,
         input out_reg_shift_ld_i,
-        input [$clog2(N)-1 : 0]filter_size_i,
+        input [$clog2(N+1)-1 : 0]filter_size_i,
         output reg [NUM_COL_WIDTH - 1 : 0] number_of_columns_o,
         output signed [I_WIDTH + F_WIDTH -1 : 0] out_data_o 
     );

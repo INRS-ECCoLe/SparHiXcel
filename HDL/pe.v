@@ -41,6 +41,7 @@ module pe
         input start_op_i,
         input clk_i,
         input [NUM_COL_WIDTH -1 : 0]row_num_i,
+        input [$clog2(N+1)-1 : 0]filter_size_i,
         input signed [F_WIDTH - 1 : 0] f_weight_i,
 //        input wreg_rst_i,
 //        input wreg_wr_en_i,
@@ -52,13 +53,13 @@ module pe
 //        input mreg_rst_i,
 //        input mreg_wr_en_i,
         input signed [I_WIDTH + F_WIDTH - 1 : 0] top_pe_in_i,
-        input en_adder_1_i,
+        //input en_adder_1_i,
 //        input en_adder_rst_i,
 //        input en_adder_ld_i,
 //        input oreg_1_rst_i,
 //        input oreg_1_ld_i,
         input signed [I_WIDTH + F_WIDTH - 1 : 0] left_pe_in_i,
-        input en_adder_2_i,
+        //input en_adder_2_i,
 //        input oreg_2_rst_i,
 //        input oreg_2_ld_i,
 
@@ -72,8 +73,8 @@ module pe
         output path_node_rst_o,
         output path_node_ld_o,
 
-        output en_adder_1_o,
-        output en_adder_2_o,
+        //output en_adder_1_o,
+        //output en_adder_2_o,
         output [NUM_COL_WIDTH - 1 : 0] column_num_o,
         output [SEL_WIDTH - 1: 0] f_sel_o,
         output signed [F_WIDTH - 1 : 0] f_weight_o,
@@ -98,6 +99,8 @@ module pe
         wire oreg_1_ld;
         wire oreg_2_rst;
         wire oreg_2_ld;
+        wire en_adder_1;
+        wire en_adder_2;
         
         //feature_block
         in_shift_reg 
@@ -154,6 +157,7 @@ module pe
             .column_num_i(column_num_i),
             .clk_i(clk_i),
             .row_num_i(row_num_i),
+            .filter_size_i(filter_size_i),
 //            .column_num_rst_i(column_num_rst_i),
 //            .column_num_ld_i(column_num_ld_i),
 //            .mreg_addrs_rst_i(mreg_addrs_rst_i),
@@ -161,8 +165,8 @@ module pe
             .f_sel_i(f_sel_i),
 //            .f_sel_rst_i(f_sel_rst_i),
 //            .f_sel_ld_i(f_sel_ld_i),
-            .en_adder_1_i(en_adder_1_i),
-            .en_adder_2_i(en_adder_2_i),
+//            .en_adder_1_i(en_adder_1_i),
+//            .en_adder_2_i(en_adder_2_i),
 //            .en_adder_rst_i(en_adder_rst_i),
 //            .en_adder_ld_i(en_adder_ld_i),
             .rst_i(rst_i),
@@ -190,8 +194,8 @@ module pe
             .path_node_rst_o(path_node_rst_o),
             .path_node_ld_o(path_node_ld_o),
             
-            .en_adder_1_o(en_adder_1_o),
-            .en_adder_2_o(en_adder_2_o),
+            .en_adder_1_o(en_adder_1),
+            .en_adder_2_o(en_adder_2),
             .column_num_o(column_num_o),
             .f_sel_o(f_sel_o),
             .mreg_wr_addrs_o(mreg_wr_addrs),
@@ -227,7 +231,7 @@ module pe
        (
             .a_i(result_mul_to_adder),
             .b_i(top_pe_in_i),
-            .en_adder_i(en_adder_1_o),
+            .en_adder_i(en_adder_1),
             .sum_o(sum_1),
             .c_o()
        );
@@ -257,7 +261,7 @@ module pe
        (
             .a_i(o_reg_1),
             .b_i(left_pe_in_i),
-            .en_adder_i(en_adder_2_o),
+            .en_adder_i(en_adder_2),
             .sum_o(sum_2),
             .c_o()
        );

@@ -39,6 +39,7 @@ module SA_controller
     )
     (
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
+      
         input [$clog2(N+1)-1 : 0]filter_size_i,
         input clk_i,
         input general_rst_i,
@@ -50,17 +51,16 @@ module SA_controller
         output reg rd_feature_ld_o,
         output reg rd_rom_signals_ld_o,
         output reg [SIG_ADDRS_WIDTH - 1 : 0]addrs_rom_signal_o,
-        output [SEL_WIDTH - 1: 0] f_sel_o [0 : N_ROWS_ARRAY - 1],
+        output reg [SEL_WIDTH - 1: 0] f_sel_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH -1 : 0]row_num_o [0 : N_ROWS_ARRAY - 1],
-        
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] number_of_columns_o[0 : N_ROWS_ARRAY - 1],
-        output reg [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_o[0 : N_ROWS_ARRAY - 1],
+        output reg [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_o [0 : N_ROWS_ARRAY - 1],
         output reg en_adder_node_o [0 : N_ROWS_ARRAY - 1],
         output reg sel_mux_node_o [0 : N_ROWS_ARRAY - 1]
                      
     );
-     
+    /* 
     localparam [1:0]
         reset = 2'b00 , load = 2'b01,
         ready = 2'b10 , start = 2'b11;
@@ -91,17 +91,28 @@ module SA_controller
         //case(p_state)
     
     end
+     */
     
+    reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
+    wire rst_col, ld_col;
+    wire f_sel_ld, f_sel_rst;
+    wire sel_mux_tr_ld, sel_mux_tr_rst;
+    wire number_of_columns_ld, number_of_columns_rst;
+    wire en_adder_node_ld, en_adder_node_rst;
+    wire [SEL_WIDTH - 1: 0] f_sel [0 : N_ROWS_ARRAY - 1];
+    wire [NUM_COL_WIDTH - 1 : 0] number_of_columns[0 : N_ROWS_ARRAY - 1];
+    wire [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr [0 : N_ROWS_ARRAY - 1];
+    wire en_adder_node [0 : N_ROWS_ARRAY - 1];
     genvar j;
     generate
         for (j = 0 ; j < N_ROWS_ARRAY ; j = j + 1) begin
-            assign f_sel_o[j] =  rom_signals_data_i [(j + 1)* SEL_WIDTH - 1 : j * SEL_WIDTH];
-            assign number_of_columns_o[j] =  rom_signals_data_i [(j + 1)* NUM_COL_WIDTH + N_ROWS_ARRAY * SEL_WIDTH - 1 : (j* NUM_COL_WIDTH + N_ROWS_ARRAY * SEL_WIDTH)];
+            assign f_sel[j] =  rom_signals_data_i [(j + 1)* SEL_WIDTH - 1 : j * SEL_WIDTH];
+            assign number_of_columns[j] =  rom_signals_data_i [(j + 1)* NUM_COL_WIDTH + N_ROWS_ARRAY * SEL_WIDTH - 1 : j* NUM_COL_WIDTH + N_ROWS_ARRAY * SEL_WIDTH];
+            assign sel_mux_tr [j] = rom_signals_data_i [(j+1) * SEL_MUX_TR_WIDTH  + N_ROWS_ARRAY * (NUM_COL_WIDTH + SEL_WIDTH) - 1 : j * SEL_MUX_TR_WIDTH  + N_ROWS_ARRAY * (NUM_COL_WIDTH + SEL_WIDTH)];
+            assign en_adder_node [j] = rom_signals_data_i [(j+1) + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH) - 1 : j + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH)];
+        
         end
     endgenerate
-    
-    reg end_reset;
-   
     
     integer i , b;
     always@ (*) begin  
@@ -111,20 +122,88 @@ module SA_controller
                 b = 0;  
             end
             row_num_o[i] = b + 1'b1;
-            b = b + 1;    
+            b = b + 1; 
+            if (row_num_o[i] == filter_size_i) sel_mux_node_o[i] = 0;
+            else sel_mux_node_o[i] = 1;   
         end
         
     end
+    
+    always @(posedge clk_i) begin
+        if (rst_col)begin
+            foreach(count_col[i]) begin
+                count_col[i] <= 0;
+            end    
+        end else if (ld_col) begin
+            for (i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                column_num_o[i] <= number_of_columns_o [i] - count_col[i];
+                if (count_col[i] == number_of_columns_o[i]-1)
+                    count_col[i] <= 0;
+                else begin
+                    count_col[i] <= count_col[i] + 1;    
+                end
+            end    
+        end
+    end
+  
+    
+    
+    always @ (posedge clk_i or posedge f_sel_rst) begin 
         
-    always@(*) begin
-        b = 0; 
-        for (i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
-            column_num_o[i] = number_of_columns_o [i] - b;
-            if (column_num_o[i] == 1)b = 0;
-            else begin
-                b = b + 1;    
-            end
-        end 
+        if (f_sel_rst) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                f_sel_o[i] <= 0;
+            end    
+        end else if (f_sel_ld) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                f_sel_o[i] <= f_sel[i];
+            end   
+        end
+    end
+    
+    
+    
+    always @ (posedge clk_i or posedge number_of_columns_rst) begin 
+        
+        if (number_of_columns_rst) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                number_of_columns_o[i] <= 0;
+            end    
+        end else if (number_of_columns_ld) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                number_of_columns_o[i] <= number_of_columns[i];
+            end     
+        end
+    end
+    
+    
+    
+    always @ (posedge clk_i or posedge sel_mux_tr_rst) begin 
+        
+        if (sel_mux_tr_rst) begin 
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                sel_mux_tr_o[i] <= 0;
+            end     
+        end else if (sel_mux_tr_ld) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                sel_mux_tr_o[i] <= sel_mux_tr[i];
+            end  
+        end
+    end
+    
+    
+    
+    always @ (posedge clk_i or posedge en_adder_node_rst) begin 
+        
+        if (en_adder_node_rst) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                en_adder_node_o[i] <= 0;
+            end       
+        end else if (en_adder_node_ld) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                en_adder_node_o[i] <= en_adder_node[i];
+            end 
+        end
     end
     
     

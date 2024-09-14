@@ -31,7 +31,7 @@ module counter
     output reg [COUNTER_WIDTH - 1 : 0] count_num_o
     );
     
-    always @ (posedge clk_i or counter_rst_i) begin
+    always @ (posedge clk_i) begin
         if (counter_rst_i) begin
             count_num_o <= {COUNTER_WIDTH{1'b0}};   
         end else if (counter_ld_i) begin

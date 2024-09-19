@@ -39,7 +39,8 @@ module SA_controller
         
         parameter LOAD_COUNTER_WIDTH = 4,
         parameter READY_COUNTER_WIDTH = 2,
-        parameter WAITING_OP_COUNTER_WIDTH = 4
+        parameter WAITING_OP_COUNTER_WIDTH = 4,
+        parameter COUNTER_ROUND_WIDTH = 3
     )
     (
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
@@ -47,7 +48,8 @@ module SA_controller
         input clk_i,
         input general_rst_i,
         input end_feature_i,
-        input end_weight_i,
+        input [COUNTER_ROUND_WIDTH - 1 : 0] max_round_weight_i,
+        //input end_weight_i,
         output reg rst_o,
         output reg load_o,
         output reg ready_o,
@@ -55,7 +57,7 @@ module SA_controller
         output reg rd_weight_ld_o,
         output reg rd_feature_ld_o,
         output reg rd_rom_signals_ld_o,
-        output reg [SIG_ADDRS_WIDTH - 1 : 0]addrs_rom_signal_o,
+        output [SIG_ADDRS_WIDTH - 1 : 0]addrs_rom_signal_o,
         output reg [SEL_WIDTH - 1: 0] f_sel_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH -1 : 0]row_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o [0 : N_ROWS_ARRAY - 1],
@@ -77,7 +79,10 @@ module SA_controller
     reg counter_ready_rst;
     reg counter_ready_ld;
     reg counter_address_rom_rst;
-    reg counter_address_rom_ld;
+    reg round_weight_ld;
+    reg end_weight;
+    wire [COUNTER_ROUND_WIDTH - 1 : 0]round_num_weight;
+    //reg counter_address_rom_ld;
     wire [READY_COUNTER_WIDTH - 1 : 0] ready_count_num;
     wire [LOAD_COUNTER_WIDTH - 1 : 0] load_count_num;  
     wire [LOAD_COUNTER_WIDTH - 1 : 0] waiting_op_count_num; 
@@ -92,20 +97,20 @@ module SA_controller
         ready = 2'b10 , start = 2'b11;
     reg [1:0] p_state, n_state;
 
-    always @(p_state or general_rst_i or end_weight_i or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: state_transition
+    always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: state_transition
         case(p_state)
             reset:
-                if (general_rst_i == 0 && end_weight_i == 0) n_state = load;
+                if (general_rst_i == 0 && end_weight == 0) n_state = load;
                 else n_state = reset;
             load:
-                if (load_count_num == N_ROWS_ARRAY) n_state = ready;
+                if (load_count_num == N_COLS_ARRAY) n_state = ready;
                 else n_state = load;
             ready:
                 if (ready_count_num == 2) n_state = start;
                 else n_state = ready;
             start:
                 if (general_rst_i == 0) n_state = reset;
-                else if (end_feature_i == 1 && end_weight_i == 1) n_state = reset;
+                else if (end_feature_i == 1 && end_weight == 1) n_state = reset;
                 else if (end_feature_i == 1 && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = load;
                 else n_state = start;
             default:
@@ -114,7 +119,7 @@ module SA_controller
         
     end
      
-    always @(p_state or general_rst_i or end_weight_i or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: output_assignments
+    always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: output_assignments
         case(p_state)
             reset: begin
                 rst_col = 1;
@@ -135,7 +140,7 @@ module SA_controller
                 counter_waiting_op_ld = 0;
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
-                counter_address_rom_ld = 0;
+                //counter_address_rom_ld = 0;
                 
                 rst_o = 1;
                 load_o = 0;
@@ -165,7 +170,7 @@ module SA_controller
                 counter_waiting_op_ld = 0;
                 counter_load_ld = 1;
                 counter_ready_ld = 0;
-                counter_address_rom_ld = 1;
+                //counter_address_rom_ld = 1;
                 
                 rst_o = 0;
                 load_o = 1;
@@ -195,7 +200,7 @@ module SA_controller
                 counter_waiting_op_ld = 0;
                 counter_load_ld = 0;
                 counter_ready_ld = 1;
-                counter_address_rom_ld = 0;
+                //counter_address_rom_ld = 0;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -227,7 +232,7 @@ module SA_controller
                 else counter_waiting_op_ld = 0;
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
-                counter_address_rom_ld = 0;
+                //counter_address_rom_ld = 0;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -275,7 +280,7 @@ module SA_controller
         end
         
     end
-    // generating column number by using a cominational hardware and number of columns as an input.
+    // generating column number by using number of columns as an input.
     always @(posedge clk_i) begin
         if (rst_col)begin
             foreach(count_col[i]) begin
@@ -367,18 +372,29 @@ module SA_controller
         .count_num_o(load_count_num)
     );
     
-    //counter for addrs_rom_signal_o
-      
+    //counter for counting the number of rounds required by weights
+
+    always @(*) begin
+        if (load_count_num == N_COLS_ARRAY) round_weight_ld = 1;
+        else round_weight_ld = 0;
+    end 
+    always @(*) begin
+        if (round_num_weight == max_round_weight_i) end_weight = 1;
+        else end_weight = 0;
+    end 
+    
+    assign addrs_rom_signal_o = round_num_weight * N_COLS_ARRAY + load_count_num;
+    
     counter
     #(
-        .COUNTER_WIDTH(SIG_ADDRS_WIDTH)    
+        .COUNTER_WIDTH(COUNTER_ROUND_WIDTH)    
     )
-    address_rom_counter
+    rounds_weights_counter
     (
         .clk_i(clk_i),
         .counter_rst_i(counter_address_rom_rst),
-        .counter_ld_i(counter_address_rom_ld),
-        .count_num_o(addrs_rom_signal_o)
+        .counter_ld_i(round_weight_ld),
+        .count_num_o(round_num_weight)
     );
     //counter for waiting required time for finishing operational stage after finishing input features.
      

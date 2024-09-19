@@ -57,7 +57,7 @@ module systolic_array
         input en_adder_node_i [0 : N_ROWS_ARRAY - 1],
         input sel_mux_node_i [0 : N_ROWS_ARRAY - 1],
 
-        output signed [F_WIDTH + I_WIDTH - 1 : 0] result [0 : N_COLS_ARRAY - 1]
+        output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
     );
         
         wire signed [F_WIDTH + I_WIDTH - 1 : 0] output_pe [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
@@ -236,7 +236,7 @@ module systolic_array
                 end
             
             end 
-        assign result = out_node [N_ROWS_ARRAY - 1][0 : N_COLS_ARRAY -1];
+        assign result_o = out_node [N_ROWS_ARRAY - 1][0 : N_COLS_ARRAY -1];
         endgenerate 
         
         genvar x, y;

@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 08/19/2024 01:53:18 PM
+// Create Date: 09/19/2024 11:54:59 AM
 // Design Name: 
-// Module Name: rom_signals
+// Module Name: rom_memory
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,24 +20,26 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module rom_signals
+module rom_memory
     #(
-        parameter MEMORY_WIDTH = 63,
-        parameter ADDRS_WIDTH = 4
+        parameter MEMORY_WIDTH = 72,
+        parameter ADDRS_WIDTH = 8,
+        parameter FINISH_MEM = 4
     )
     (
-        input [ADDRS_WIDTH - 1 : 0] addrs_rom_signal_i,
-        input rd_rom_signals_ld_i,
-        output [MEMORY_WIDTH - 1 : 0] rom_signals_data_o
+        input [ADDRS_WIDTH - 1 : 0] addrs_mem_i,
+        input clk_i,
+        input rd_mem_ld_i,
+        output [MEMORY_WIDTH - 1 : 0] mem_data_o,
+        output reg end_mem_o
     );
 
     reg [MEMORY_WIDTH - 1 : 0] memory [ADDRS_WIDTH - 1 : 0] ;
  
-    assign rom_signals_data_o = rd_rom_signals_ld_i ? memory[addrs_rom_signal_i] : {MEMORY_WIDTH{1'b0}};
+    assign mem_data_o = rd_mem_ld_i ? memory[addrs_mem_i] : {MEMORY_WIDTH{1'b0}};
    
     initial begin
       $readmemb("content.mem",memory);
     end
-    
-
 endmodule
+

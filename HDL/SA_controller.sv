@@ -40,7 +40,8 @@ module SA_controller
         parameter LOAD_COUNTER_WIDTH = 4,
         parameter READY_COUNTER_WIDTH = 2,
         parameter WAITING_OP_COUNTER_WIDTH = 4,
-        parameter COUNTER_ROUND_WIDTH = 3
+        parameter COUNTER_ROUND_WIDTH = 3,
+        parameter INPUT_FEATURE_ADDR_WIDTH = 5
     )
     (
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
@@ -50,11 +51,13 @@ module SA_controller
         input end_feature_i,
         input [COUNTER_ROUND_WIDTH - 1 : 0] max_round_weight_i,
         //input end_weight_i,
+        output [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] in_feature_addr_o,
         output reg rst_o,
         output reg load_o,
         output reg ready_o,
         output reg start_op_o,
         output reg rd_weight_ld_o,
+        output reg rd_weight_rst_o,
         output reg rd_feature_ld_o,
         output reg rd_rom_signals_ld_o,
         output [SIG_ADDRS_WIDTH - 1 : 0]addrs_rom_signal_o,
@@ -80,6 +83,8 @@ module SA_controller
     reg counter_ready_ld;
     reg counter_address_rom_rst;
     reg round_weight_ld;
+    reg in_feature_address_rst;
+    reg in_feature_address_ld;
     reg end_weight;
     wire [COUNTER_ROUND_WIDTH - 1 : 0]round_num_weight;
     //reg counter_address_rom_ld;
@@ -131,6 +136,8 @@ module SA_controller
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 1;
                 counter_address_rom_rst = 1;
+                in_feature_address_rst = 1;
+                rd_weight_rst_o = 1;
                 
                 ld_col = 0;
                 f_sel_ld = 0;
@@ -141,6 +148,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
+                in_feature_address_ld = 0;
                 
                 rst_o = 1;
                 load_o = 0;
@@ -161,6 +169,8 @@ module SA_controller
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 0;
                 counter_address_rom_rst = 0;
+                in_feature_address_rst = 0;
+                rd_weight_rst_o = 0;
                 
                 ld_col = 1;
                 f_sel_ld = 1;
@@ -171,6 +181,7 @@ module SA_controller
                 counter_load_ld = 1;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 1;
+                in_feature_address_ld = 0;
                 
                 rst_o = 0;
                 load_o = 1;
@@ -191,6 +202,8 @@ module SA_controller
                 counter_waiting_op_rst = 0;
                 counter_ready_rst = 0;
                 counter_address_rom_rst = 0;
+                in_feature_address_rst = 0;
+                rd_weight_rst_o = 0; 
                 
                 ld_col = 0;
                 f_sel_ld = 0;
@@ -201,6 +214,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 1;
                 //counter_address_rom_ld = 0;
+                in_feature_address_ld = 1;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -222,6 +236,8 @@ module SA_controller
                 counter_waiting_op_rst = 0;
                 counter_ready_rst = 1;
                 counter_address_rom_rst = 0;
+                in_feature_address_rst = 0;
+                rd_weight_rst_o = 0;
                 
                 ld_col = 0;
                 f_sel_ld = 0;
@@ -233,6 +249,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
+                in_feature_address_ld = 1;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -422,6 +439,21 @@ module SA_controller
         .counter_rst_i(counter_ready_rst),
         .counter_ld_i(counter_ready_ld),
         .count_num_o(ready_count_num)
+    );
+    
+     //counter for in_feature_address.
+
+      
+    counter
+    #(
+        .COUNTER_WIDTH(INPUT_FEATURE_ADDR_WIDTH)    
+    )
+    in_feature_address
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(in_feature_address_rst),
+        .counter_ld_i(in_feature_address_ld),
+        .count_num_o(in_feature_addr_o)
     );
 endmodule
 

@@ -28,10 +28,8 @@ module rom_memory
     )
     (
         input [ADDRS_WIDTH - 1 : 0] addrs_mem_i,
-        input clk_i,
         input rd_mem_ld_i,
         output [MEMORY_WIDTH - 1 : 0] mem_data_o,
-        output reg end_mem_o
     );
 
     reg [MEMORY_WIDTH - 1 : 0] memory [ADDRS_WIDTH - 1 : 0] ;
@@ -41,5 +39,7 @@ module rom_memory
     initial begin
       $readmemb("content.mem",memory);
     end
+    
+    
 endmodule
 

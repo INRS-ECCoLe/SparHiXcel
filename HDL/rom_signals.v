@@ -36,7 +36,7 @@ module rom_signals
     assign rom_signals_data_o = rd_rom_signals_ld_i ? memory[addrs_rom_signal_i] : {MEMORY_WIDTH{1'b0}};
    
     initial begin
-      $readmemb("content.mem",memory);
+      $readmemb("signal.mem",memory);
     end
     
 

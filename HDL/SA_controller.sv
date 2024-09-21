@@ -90,17 +90,17 @@ module SA_controller
     //reg counter_address_rom_ld;
     wire [READY_COUNTER_WIDTH - 1 : 0] ready_count_num;
     wire [LOAD_COUNTER_WIDTH - 1 : 0] load_count_num;  
-    wire [LOAD_COUNTER_WIDTH - 1 : 0] waiting_op_count_num; 
+    wire [WAITING_OP_COUNTER_WIDTH - 1 : 0] waiting_op_count_num; 
     wire [SEL_WIDTH - 1: 0] f_sel [0 : N_ROWS_ARRAY - 1];
     wire [NUM_COL_WIDTH - 1 : 0] number_of_columns[0 : N_ROWS_ARRAY - 1];
     wire [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr [0 : N_ROWS_ARRAY - 1];
     wire en_adder_node [0 : N_ROWS_ARRAY - 1];
     
      
-    localparam [1:0]
-        reset = 2'b00 , load = 2'b01,
-        ready = 2'b10 , start = 2'b11;
-    reg [1:0] p_state, n_state;
+    localparam [2:0]
+        reset = 3'b000 , load = 3'b001,
+        ready = 3'b010 , start = 3'b011 , waiting = 3'b100;
+    reg [2:0] p_state, n_state;
 
     always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: state_transition
         case(p_state)
@@ -108,16 +108,20 @@ module SA_controller
                 if (general_rst_i == 0 && end_weight == 0) n_state = load;
                 else n_state = reset;
             load:
-                if (load_count_num == N_COLS_ARRAY) n_state = ready;
+                if (load_count_num == N_COLS_ARRAY-1) n_state = ready;
                 else n_state = load;
             ready:
                 if (ready_count_num == 2) n_state = start;
                 else n_state = ready;
             start:
-                if (general_rst_i == 0) n_state = reset;
-                else if (end_feature_i == 1 && end_weight == 1) n_state = reset;
-                else if (end_feature_i == 1 && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = load;
+                if (general_rst_i == 1) n_state = reset;
+                else if (end_feature_i == 1) n_state = waiting;
                 else n_state = start;
+            waiting:
+                if (general_rst_i == 1) n_state = reset;
+                else if (end_weight == 1 && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = reset;
+                else if ((waiting_op_count_num == 2 * (filter_size_i - 1) + 6))  n_state = load;
+                else n_state = waiting;
             default:
                 n_state = reset;
         endcase
@@ -169,7 +173,7 @@ module SA_controller
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 0;
                 counter_address_rom_rst = 0;
-                in_feature_address_rst = 0;
+                in_feature_address_rst = 1;
                 rd_weight_rst_o = 0;
                 
                 ld_col = 1;
@@ -244,8 +248,7 @@ module SA_controller
                 sel_mux_tr_ld = 0;
                 number_of_columns_ld = 0;
                 en_adder_node_ld = 0;
-                if (end_feature_i) counter_waiting_op_ld = 1;
-                else counter_waiting_op_ld = 0;
+                counter_waiting_op_ld = 0;      
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
@@ -257,6 +260,40 @@ module SA_controller
                 start_op_o = 1;
                 rd_weight_ld_o = 0;
                 rd_feature_ld_o = 1;
+                rd_rom_signals_ld_o = 0;
+            
+            end
+            waiting: begin
+                rst_col = 0;
+                f_sel_rst = 0;
+                sel_mux_tr_rst= 0;
+                number_of_columns_rst = 0;
+                en_adder_node_rst = 0;
+                counter_load_rst = 0;
+                counter_waiting_op_rst = 0;
+                counter_ready_rst = 0;
+                counter_address_rom_rst = 0;
+                in_feature_address_rst = 1;
+                rd_weight_rst_o = 0;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 1;
+         
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                in_feature_address_ld = 0;
+                
+                rst_o = 0;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 1;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
                 rd_rom_signals_ld_o = 0;
             
             end
@@ -283,6 +320,10 @@ module SA_controller
         end
     endgenerate
     // generating row numbers by a combinational hardware.  
+
+
+
+
     integer i , b;
     always@ (*) begin  
         b = 0;
@@ -305,8 +346,8 @@ module SA_controller
             end    
         end else if (ld_col) begin
             for (i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
-                column_num_o[i] <= number_of_columns_o [i] - count_col[i];
-                if (count_col[i] == number_of_columns_o[i]-1)
+                column_num_o[i] <= number_of_columns [i] - count_col[i];
+                if (count_col[i] == number_of_columns[i]-1)
                     count_col[i] <= 0;
                 else begin
                     count_col[i] <= count_col[i] + 1;    
@@ -346,6 +387,19 @@ module SA_controller
     end
     
     //Register for sel_mux_tr_o
+    reg [SEL_MUX_TR_WIDTH - 1 : 0] pre_sel_mux_tr [0 : N_ROWS_ARRAY - 1];
+    always @ (posedge clk_i or posedge sel_mux_tr_rst) begin 
+        
+        if (sel_mux_tr_rst) begin 
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                pre_sel_mux_tr[i] <= 0;
+            end     
+        end else if (sel_mux_tr_ld) begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                pre_sel_mux_tr[i] <= sel_mux_tr[i];
+            end  
+        end
+    end
     
     always @ (posedge clk_i or posedge sel_mux_tr_rst) begin 
         
@@ -355,11 +409,10 @@ module SA_controller
             end     
         end else if (sel_mux_tr_ld) begin
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
-                sel_mux_tr_o[i] <= sel_mux_tr[i];
+                sel_mux_tr_o[i] <= pre_sel_mux_tr[i];
             end  
         end
     end
-    
     //Register for en_adder_node_o
     
     always @ (posedge clk_i or posedge en_adder_node_rst) begin 
@@ -392,7 +445,7 @@ module SA_controller
     //counter for counting the number of rounds required by weights
 
     always @(*) begin
-        if (load_count_num == N_COLS_ARRAY) round_weight_ld = 1;
+        if (load_count_num == N_COLS_ARRAY-1) round_weight_ld = 1;
         else round_weight_ld = 0;
     end 
     always @(*) begin

@@ -18,8 +18,8 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 4;
-localparam N_COLS_ARRAY = 4;
+localparam N_ROWS_ARRAY = 9;
+localparam N_COLS_ARRAY = 8;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
@@ -35,10 +35,10 @@ localparam ROM_SIG_WIDTH = 63;
 localparam SIG_ADDRS_WIDTH = 10;   
         
 localparam LOAD_COUNTER_WIDTH = 4;
-localparam READY_COUNTER_WIDTH = 2;
+localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 localparam COUNTER_ROUND_WIDTH = 3;
-localparam INPUT_FEATURE_ADDR_WIDTH = 5;
+localparam INPUT_FEATURE_ADDR_WIDTH = 10;
     
 
 module sparhixcel_design
@@ -48,11 +48,10 @@ module sparhixcel_design
     (
         
         input [$clog2(N+1)-1 : 0]filter_size_i,
-        ionput [COUNTER_ROUND_WIDTH : 0] n_round_weight_i,
+        input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
+        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] end_addr_in_feature_i,
         input clk_i,
         input general_rst_i,
-        input end_feature_i,
-        input end_weight_i,
         output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
     );
     
@@ -79,6 +78,7 @@ module sparhixcel_design
     wire signed [F_WIDTH - 1: 0] f_weight_array [0 : N_ROWS_ARRAY - 1];
     wire [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
+    reg end_feature;
     
     genvar i;
     generate 
@@ -91,7 +91,7 @@ module sparhixcel_design
     genvar j;
     generate 
         for (j = 0 ; j < N_ROWS_ARRAY ; j = j + 1) begin
-            assign f_weight_array[i] = f_weight_mem [(i + 1)* I_WIDTH - 1 : i * I_WIDTH];
+            assign f_weight_array[j] = f_weight_mem [(j + 1)* F_WIDTH - 1 : j * F_WIDTH];
         end
     endgenerate
        
@@ -110,7 +110,7 @@ module sparhixcel_design
         end
     end
     
-    
+
     
     systolic_array
     #(
@@ -173,8 +173,8 @@ module sparhixcel_design
         .filter_size_i(filter_size_i),
         .clk_i(clk_i),
         .general_rst_i(general_rst_i),
-        .end_feature_i(),
-        .max_round_weight_i(),
+        .end_feature_i(end_feature),
+        .max_round_weight_i(n_round_weight_i),
         //.end_weight_i(),
         .in_feature_addr_o(in_feature_addr),
         .rst_o(rst),
@@ -212,19 +212,37 @@ module sparhixcel_design
       
     rom_memory
     #(
-        .MEMORY_WIDTH(ROM_SIG_WIDTH),
-        .ADDRS_WIDTH(SIG_ADDRS_WIDTH)
+        .MEMORY_WIDTH(N_ROWS_ARRAY * I_WIDTH),
+        .ADDRS_WIDTH(INPUT_FEATURE_ADDR_WIDTH)
     )
     in_feature_memory
     (
         .addrs_mem_i(in_feature_addr),
         .rd_mem_ld_i(rd_feature_ld),
         .mem_data_o(in_feature_mem)
+    );  
+    
+      
+    
+    always @(*) begin
+        if (end_addr_in_feature_i == in_feature_addr) end_feature = 1'b1;
+        else end_feature = 1'b0;
+    end
+    
+    
+    
+    rom_memory2
+    #(
+        .MEMORY_WIDTH(N_ROWS_ARRAY * F_WIDTH),
+        .ADDRS_WIDTH(SIG_ADDRS_WIDTH)
+    )
+    weight_memory
+    (
+        .addrs_mem_i(addrs_rom_signal),
+        .rd_mem_ld_i(rd_weight_ld),
+        .mem_data_o(f_weight_mem)
     );    
-    
-    
-    
-    
+     
     
     
     

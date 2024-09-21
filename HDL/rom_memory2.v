@@ -3,9 +3,9 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 09/19/2024 11:54:59 AM
+// Create Date: 09/19/2024 04:58:56 PM
 // Design Name: 
-// Module Name: rom_memory
+// Module Name: rom_memory2
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module rom_memory
+module rom_memory2
     #(
         parameter MEMORY_WIDTH = 72,
         parameter ADDRS_WIDTH = 8
@@ -36,9 +36,8 @@ module rom_memory
     assign mem_data_o = rd_mem_ld_i ? memory[addrs_mem_i] : {MEMORY_WIDTH{1'b0}};
    
     initial begin
-      $readmemb("in_feature.mem",memory);
+      $readmemb("weight.mem",memory);
     end
     
-    
-endmodule
 
+endmodule

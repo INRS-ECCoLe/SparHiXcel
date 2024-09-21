@@ -90,7 +90,7 @@ module test_SA_3_3();
         .number_of_columns_i(number_of_columns_i),
         .en_adder_node_i(en_adder_node_i),
         .sel_mux_node_i(sel_mux_node_i),
-        .result(result)    
+        .result_o(result)    
     );
     
     integer i;
@@ -220,7 +220,7 @@ module test_SA_3_3();
         end
         #10;
         load_i = 1;
-        #15;
+        #10;
         foreach (en_adder_node_i[i]) begin
             if (i==0) en_adder_node_i[i] = 0;
             else if (i==1) en_adder_node_i[i] = 0;   
@@ -244,6 +244,7 @@ module test_SA_3_3();
             else if (i==7) f_weight_i[i]= -2;
             else if (i==8) f_weight_i[i]= -1;   
         end
+        /*
         foreach (sel_mux_node_i[i]) begin
             if (i==0) sel_mux_node_i[i]= 1;
             else if (i==1) sel_mux_node_i[i]= 1;
@@ -253,8 +254,22 @@ module test_SA_3_3();
             else if (i==5) sel_mux_node_i[i]= 1;
             else if (i==6) sel_mux_node_i[i]= 1;
             else if (i==7) sel_mux_node_i[i]= 1;
-            else if (i==8) sel_mux_node_i[i]= 0; 
+            else if (i==8) sel_mux_node_i[i]= 1; 
         end
+        */
+        foreach (sel_mux_node_i[i]) begin
+            if (i==0) sel_mux_node_i[i]= 1;
+            else if (i==1) sel_mux_node_i[i]= 1;
+            else if (i==2) sel_mux_node_i[i]= 0;
+            else if (i==3) sel_mux_node_i[i]= 1;
+            else if (i==4) sel_mux_node_i[i]= 1;
+            else if (i==5) sel_mux_node_i[i]= 0;
+            else if (i==6) sel_mux_node_i[i]= 1;
+            else if (i==7) sel_mux_node_i[i]= 1; 
+            else if (i==8) sel_mux_node_i[i]= 0;
+        end
+        
+        //
         foreach (column_num_i[i]) begin
             if (i==0) column_num_i[i]= 2;
             else if (i==1) column_num_i[i]= 2;
@@ -558,6 +573,7 @@ module test_SA_3_3();
             else if (i==7) f_weight_i[i]= -2; 
             else if (i==8) f_weight_i[i]= -1;   
         end
+        /*
         foreach (sel_mux_node_i[i]) begin
             if (i==0) sel_mux_node_i[i]= 1;
             else if (i==1) sel_mux_node_i[i]= 1;
@@ -569,6 +585,23 @@ module test_SA_3_3();
             else if (i==7) sel_mux_node_i[i]= 1;
             else if (i==8) sel_mux_node_i[i]= 1; 
         end
+        */
+        
+        foreach (sel_mux_node_i[i]) begin
+            if (i==0) sel_mux_node_i[i]= 1;
+            else if (i==1) sel_mux_node_i[i]= 1;
+            else if (i==2) sel_mux_node_i[i]= 0;
+            else if (i==3) sel_mux_node_i[i]= 1;
+            else if (i==4) sel_mux_node_i[i]= 1;
+            else if (i==5) sel_mux_node_i[i]= 0;
+            else if (i==6) sel_mux_node_i[i]= 1;
+            else if (i==7) sel_mux_node_i[i]= 1; 
+            else if (i==8) sel_mux_node_i[i]= 0;
+        end
+        //
+        
+        
+        
         foreach (column_num_i[i]) begin
             if (i==0) column_num_i[i]= 1;
             else if (i==1) column_num_i[i]= 1;
@@ -663,6 +696,7 @@ module test_SA_3_3();
             else if (i==8) f_weight_i[i]= -3;   
         end
         
+        /*
         foreach (sel_mux_node_i[i]) begin
             if (i==0) sel_mux_node_i[i]= 1;
             else if (i==1) sel_mux_node_i[i]= 1;
@@ -673,7 +707,23 @@ module test_SA_3_3();
             else if (i==6) sel_mux_node_i[i]= 1;
             else if (i==7) sel_mux_node_i[i]= 1;
             else if (i==8) sel_mux_node_i[i]= 1; 
+        end*/
+        
+        //
+        foreach (sel_mux_node_i[i]) begin
+            if (i==0) sel_mux_node_i[i]= 1;
+            else if (i==1) sel_mux_node_i[i]= 1;
+            else if (i==2) sel_mux_node_i[i]= 0;
+            else if (i==3) sel_mux_node_i[i]= 1;
+            else if (i==4) sel_mux_node_i[i]= 1;
+            else if (i==5) sel_mux_node_i[i]= 0;
+            else if (i==6) sel_mux_node_i[i]= 1;
+            else if (i==7) sel_mux_node_i[i]= 1; 
+            else if (i==8) sel_mux_node_i[i]= 0;
         end
+        
+        
+        ///
         foreach (column_num_i[i]) begin
             if (i==0) column_num_i[i]= 3;
             else if (i==1) column_num_i[i]= 3;
@@ -873,6 +923,7 @@ module test_SA_3_3();
             else if (i==8) f_weight_i[i]= 1;   
         end
         
+        /*
         foreach (sel_mux_node_i[i]) begin
             if (i==0) sel_mux_node_i[i]= 1;
             else if (i==1) sel_mux_node_i[i]= 1;
@@ -883,7 +934,24 @@ module test_SA_3_3();
             else if (i==6) sel_mux_node_i[i]= 1;
             else if (i==7) sel_mux_node_i[i]= 1;
             else if (i==8) sel_mux_node_i[i]= 1; 
+        end*/
+        
+        
+        ///       
+        foreach (sel_mux_node_i[i]) begin
+            if (i==0) sel_mux_node_i[i]= 1;
+            else if (i==1) sel_mux_node_i[i]= 1;
+            else if (i==2) sel_mux_node_i[i]= 0;
+            else if (i==3) sel_mux_node_i[i]= 1;
+            else if (i==4) sel_mux_node_i[i]= 1;
+            else if (i==5) sel_mux_node_i[i]= 0;
+            else if (i==6) sel_mux_node_i[i]= 1;
+            else if (i==7) sel_mux_node_i[i]= 1; 
+            else if (i==8) sel_mux_node_i[i]= 0;
         end
+        
+        
+        //
         foreach (column_num_i[i]) begin
             if (i==0) column_num_i[i]= 1;
             else if (i==1) column_num_i[i]= 1;
@@ -974,7 +1042,18 @@ module test_SA_3_3();
             else if (i==8)in_feature_i[i] = 0;  
         end
         #10;
-        
+        foreach (in_feature_i[i]) begin
+            if (i==0) in_feature_i[i] = 0;
+            else if (i==1)in_feature_i[i] = 0;  
+            else if (i==2)in_feature_i[i] = 0; 
+            else if (i==3)in_feature_i[i] = 0;
+            else if (i==4)in_feature_i[i] = 0;  
+            else if (i==5)in_feature_i[i] = 0; 
+            else if (i==6)in_feature_i[i] = 0;
+            else if (i==7)in_feature_i[i] = 0;  
+            else if (i==8)in_feature_i[i] = 0;  
+        end
+        #10;
         
         foreach (in_feature_i[i]) begin
             if (i==0) in_feature_i[i] = 1;

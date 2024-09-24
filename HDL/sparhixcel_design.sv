@@ -50,6 +50,15 @@ module sparhixcel_design
         input [$clog2(N+1)-1 : 0]filter_size_i,
         input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
         input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] end_addr_in_feature_i,
+        input [N_ROWS_ARRAY * I_WIDTH - 1 : 0] mem_data_i,
+        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] wr_addrs_mem_i,
+        input wr_mem_ld_i,
+        input [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem2_data_i,
+        input [SIG_ADDRS_WIDTH - 1 : 0] wr_addrs_mem2_i,
+        input wr_mem2_ld_i,
+        input [SIG_ADDRS_WIDTH - 1 : 0] wr_addrs_rom_signal_i,
+        input wr_rom_signals_ld_i,
+        input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
         input general_rst_i,
         output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
@@ -206,6 +215,10 @@ module sparhixcel_design
     (
         .addrs_rom_signal_i(addrs_rom_signal),
         .rd_rom_signals_ld_i(rd_rom_signals_ld),
+        .wr_addrs_rom_signal_i(wr_addrs_rom_signal_i),
+        .clk_i(clk_i),
+        .wr_rom_signals_ld_i(wr_rom_signals_ld_i),
+        .rom_signals_data_i(rom_signals_data_i),
         .rom_signals_data_o(rom_signals_data)
     );
       
@@ -219,6 +232,10 @@ module sparhixcel_design
     (
         .addrs_mem_i(in_feature_addr),
         .rd_mem_ld_i(rd_feature_ld),
+        .mem_data_i(mem_data_i),
+        .clk_i(clk_i),
+        .wr_addrs_mem_i(wr_addrs_mem_i),
+        .wr_mem_ld_i(wr_mem_ld_i),
         .mem_data_o(in_feature_mem)
     );  
     
@@ -240,6 +257,10 @@ module sparhixcel_design
     (
         .addrs_mem_i(addrs_rom_signal),
         .rd_mem_ld_i(rd_weight_ld),
+        .mem2_data_i(mem2_data_i),
+        .clk_i(clk_i),
+        .wr_addrs_mem2_i(wr_addrs_mem2_i),
+        .wr_mem2_ld_i(wr_mem2_ld_i),
         .mem_data_o(f_weight_mem)
     );    
      

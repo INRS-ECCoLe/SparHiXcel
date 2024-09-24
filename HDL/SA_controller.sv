@@ -297,7 +297,40 @@ module SA_controller
                 rd_rom_signals_ld_o = 0;
             
             end
+            default: begin
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                counter_address_rom_rst = 1;
+                in_feature_address_rst = 1;
+                rd_weight_rst_o = 1;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 0;
+         
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                in_feature_address_ld = 0;
+                
+                rst_o = 1;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 0;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             
+            end
         endcase 
     
     end

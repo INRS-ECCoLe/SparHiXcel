@@ -19,7 +19,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 localparam N_ROWS_ARRAY = 9;
-localparam N_COLS_ARRAY = 8;
+localparam N_COLS_ARRAY = 15;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
@@ -38,7 +38,7 @@ localparam LOAD_COUNTER_WIDTH = 4;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 localparam COUNTER_ROUND_WIDTH = 3;
-localparam INPUT_FEATURE_ADDR_WIDTH = 10;
+localparam INPUT_FEATURE_ADDR_WIDTH = 2**16;
     
 
 module sparhixcel_design
@@ -251,7 +251,7 @@ module sparhixcel_design
     rom_memory2
     #(
         .MEMORY_WIDTH(N_ROWS_ARRAY * F_WIDTH),
-        .ADDRS_WIDTH(SIG_ADDRS_WIDTH)
+        .ADDRS_WIDTH(INPUT_FEATURE_ADDR_WIDTH)
     )
     weight_memory
     (

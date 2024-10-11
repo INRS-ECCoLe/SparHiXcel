@@ -18,23 +18,23 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 9;
-localparam N_COLS_ARRAY = 15;
+localparam N_ROWS_ARRAY = 20;
+localparam N_COLS_ARRAY = 20;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
-localparam LEN_TRANSFER = 4;
-localparam MAX_LEN_TRANSFER = 4;
+localparam LEN_TRANSFER = 15;
+localparam MAX_LEN_TRANSFER = 15;
 localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
         
 localparam ADDRS_WIDTH = $clog2(N);
 localparam SEL_WIDTH = $clog2(N);
 localparam NUM_COL_WIDTH = $clog2(N+1);
 
-localparam ROM_SIG_WIDTH = 63;
-localparam SIG_ADDRS_WIDTH = 10;   
+localparam ROM_SIG_WIDTH = 180;
+localparam SIG_ADDRS_WIDTH = 21;   
         
-localparam LOAD_COUNTER_WIDTH = 4;
+localparam LOAD_COUNTER_WIDTH = 5;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 localparam COUNTER_ROUND_WIDTH = 3;
@@ -46,22 +46,23 @@ module sparhixcel_design
     
     )
     (
-        
+        input [$clog2(N_COLS_ARRAY) - 1 : 0 ] select_output_i,
         input [$clog2(N+1)-1 : 0]filter_size_i,
         input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
-        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] end_addr_in_feature_i,
+        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] end_addr_in_feature_i,
         input [N_ROWS_ARRAY * I_WIDTH - 1 : 0] mem_data_i,
-        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] wr_addrs_mem_i,
+        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem_i,
         input wr_mem_ld_i,
         input [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem2_data_i,
-        input [SIG_ADDRS_WIDTH - 1 : 0] wr_addrs_mem2_i,
+        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem2_i,
         input wr_mem2_ld_i,
-        input [SIG_ADDRS_WIDTH - 1 : 0] wr_addrs_rom_signal_i,
+        input [$clog2(SIG_ADDRS_WIDTH) - 1 : 0] wr_addrs_rom_signal_i,
         input wr_rom_signals_ld_i,
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
         input general_rst_i,
-        output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
+        output reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo
+        
     );
     
     wire rst;
@@ -72,7 +73,7 @@ module sparhixcel_design
     wire rd_weight_rst;
     wire rd_feature_ld;
     wire rd_rom_signals_ld;
-    wire [SIG_ADDRS_WIDTH - 1 : 0]addrs_rom_signal;
+    wire [$clog2(SIG_ADDRS_WIDTH) - 1 : 0]addrs_rom_signal;
     wire [ROM_SIG_WIDTH - 1 : 0] rom_signals_data;
     wire [SEL_WIDTH - 1: 0] f_sel [0 : N_ROWS_ARRAY - 1];
     wire [NUM_COL_WIDTH -1 : 0]row_num [0 : N_ROWS_ARRAY - 1];
@@ -85,10 +86,10 @@ module sparhixcel_design
     wire signed [I_WIDTH - 1: 0] in_feature_array [0 : N_ROWS_ARRAY - 1];
     wire [F_WIDTH * N_ROWS_ARRAY - 1: 0] f_weight_mem;
     wire signed [F_WIDTH - 1: 0] f_weight_array [0 : N_ROWS_ARRAY - 1];
-    wire [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] in_feature_addr;
+    wire [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
     reg end_feature;
-    
+    wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     genvar i;
     generate 
         for (i = 0 ; i < N_ROWS_ARRAY ; i = i + 1) begin
@@ -169,12 +170,12 @@ module sparhixcel_design
         .SEL_WIDTH(SEL_WIDTH),
         .NUM_COL_WIDTH(NUM_COL_WIDTH),
         .ROM_SIG_WIDTH(ROM_SIG_WIDTH),
-        .SIG_ADDRS_WIDTH(SIG_ADDRS_WIDTH),
+        .SIG_ADDRS_WIDTH($clog2(SIG_ADDRS_WIDTH)),
         .LOAD_COUNTER_WIDTH(LOAD_COUNTER_WIDTH),
         .READY_COUNTER_WIDTH(READY_COUNTER_WIDTH),
         .WAITING_OP_COUNTER_WIDTH(WAITING_OP_COUNTER_WIDTH),
         .COUNTER_ROUND_WIDTH(COUNTER_ROUND_WIDTH),
-        .INPUT_FEATURE_ADDR_WIDTH(INPUT_FEATURE_ADDR_WIDTH)
+        .INPUT_FEATURE_ADDR_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH))
     )
     control_block
     (
@@ -264,7 +265,9 @@ module sparhixcel_design
         .mem_data_o(f_weight_mem)
     );    
      
-    
+    always @(*) begin
+        result_oo = result_o[select_output_i]; 
+    end
     
     
     

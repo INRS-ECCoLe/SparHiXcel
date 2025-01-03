@@ -18,8 +18,8 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 20;
-localparam N_COLS_ARRAY = 20;
+localparam N_ROWS_ARRAY = 16;
+localparam N_COLS_ARRAY = 16;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
@@ -31,15 +31,20 @@ localparam ADDRS_WIDTH = $clog2(N);
 localparam SEL_WIDTH = $clog2(N);
 localparam NUM_COL_WIDTH = $clog2(N+1);
 
-localparam ROM_SIG_WIDTH = 180;
-localparam SIG_ADDRS_WIDTH = 21;   
+localparam ROM_SIG_WIDTH = (SEL_WIDTH + NUM_COL_WIDTH + SEL_MUX_TR_WIDTH + 1)*N_ROWS_ARRAY;
+localparam SIG_ADDRS_WIDTH = 18;   
         
 localparam LOAD_COUNTER_WIDTH = 5;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 localparam COUNTER_ROUND_WIDTH = 3;
 localparam INPUT_FEATURE_ADDR_WIDTH = 2**16;
-    
+
+localparam NUMBER_SUPPORTED_FILTERS = 30;
+localparam NUMBER_MUX_OUT_1 = 4;
+localparam NUMBER_INPUT_MUX_OUT_1 = 1 + (N_COLS_ARRAY/NUMBER_MUX_OUT_1); // +1 is for having zero in input of mux for times that there is no corresponding output for that filter.
+localparam SEL_WIDTH_MUX_OUT_1 = $clog2(NUMBER_INPUT_MUX_OUT_1);    
+localparam SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1);   
 
 module sparhixcel_design
     #(
@@ -61,7 +66,7 @@ module sparhixcel_design
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
         input general_rst_i,
-        output reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo
+        output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
         
     );
     
@@ -89,7 +94,7 @@ module sparhixcel_design
     wire [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
     reg end_feature;
-    wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
+    //wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     genvar i;
     generate 
         for (i = 0 ; i < N_ROWS_ARRAY ; i = i + 1) begin
@@ -265,9 +270,7 @@ module sparhixcel_design
         .mem_data_o(f_weight_mem)
     );    
      
-    always @(*) begin
-        result_oo = result_o[select_output_i]; 
-    end
+    
     
     
     

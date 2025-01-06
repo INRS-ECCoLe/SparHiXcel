@@ -22,37 +22,43 @@
 
 module output_block
     #(
-    parameter N_ROWS_ARRAY = 16,
     parameter N_COLS_ARRAY = 16,
     parameter I_WIDTH = 8,
     parameter F_WIDTH = 8,
-    parameter NUMBER_SUPPORTED_FILTERS = 32,
     parameter NUMBER_MUX_OUT_1 = 4,
     parameter NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 - 1) / NUMBER_MUX_OUT_1,
     parameter SEL_WIDTH_MUX_OUT_1 = $clog2(1 + NUMBER_INPUT_MUX_OUT_1),  // +1 is for having zero in input of mux for times that there is no corresponding output for that filter.  
-    parameter SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1)
+    parameter SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1),
+    parameter BRAM_ADDR_WIDTH = 15
     )
     (
     input signed [F_WIDTH + I_WIDTH - 1 : 0] data_in_i [0 : N_COLS_ARRAY - 1],
     input clk_i,
     input [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_i,
     input [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_i,
-    input sel_mux_out_rst_i,
-    input sel_mux_out_ld_i,
     input reg_rst_i,
     input reg_wr_en_i,
     input sel_mux_rst_i,
     input sel_mux_ld_i,
+    input bram_rst_i,
+    input bram_wr_en_a_i,
+    input bram_wr_en_b_i,
+    input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read_i,
+    input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write_i,
     
     output reg [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_o,
     output reg [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_o,
-    output signed [I_WIDTH + F_WIDTH - 1 : 0] data_out_o
+    output signed [I_WIDTH + F_WIDTH - 1 : 0] d_out_o
     );
     
     wire signed [I_WIDTH + F_WIDTH - 1 : 0] out_1 [0 :NUMBER_MUX_OUT_1 - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] data_in [0 : (NUMBER_INPUT_MUX_OUT_1 * NUMBER_MUX_OUT_1) - 1];
     wire signed [I_WIDTH + F_WIDTH - 1 : 0] out_reg [0 :NUMBER_MUX_OUT_1 - 1];
     wire signed [I_WIDTH + F_WIDTH - 1 : 0] out_2;
+    wire [I_WIDTH + F_WIDTH - 1 : 0] bram_data_write_a;
+    wire [I_WIDTH + F_WIDTH - 1 : 0] bram_data_write_b = {(I_WIDTH + F_WIDTH ){1'b0}};
+    wire [I_WIDTH + F_WIDTH - 1 : 0] bram_data_read;
+    
     genvar a;
     generate
         for(a = 0; a < (NUMBER_INPUT_MUX_OUT_1 * NUMBER_MUX_OUT_1) ; a = a + 1) begin
@@ -132,7 +138,40 @@ module output_block
         end
     end 
     
+    //BRAM 
+        
+    BRAM_filter
+    #(
+        .DATA_WIDTH(I_WIDTH + F_WIDTH),
+        .ADDR_WIDTH(BRAM_ADDR_WIDTH)
+    )
+    BRAM_f
+    (
+        .clk_i(clk_i),
+        .bram_rst_i(bram_rst_i),
+        .bram_wr_en_a_i(bram_wr_en_a_i),
+        .bram_wr_en_b_i(bram_wr_en_b_i),
+        .addr_a_i(bram_addr_write_read_i),
+        .addr_b_i(bram_addr_read_write_i),
+        .data_in_a_i(bram_data_write_a),
+        .data_in_b_i(bram_data_write_b),
+        .data_out_a_o(d_out_o),
+        .data_out_b_o(bram_data_read) 
+    );
     
+    //adder
     
+    adder_without_en
+    #(
+        .I_WIDTH(I_WIDTH),
+        .F_WIDTH(F_WIDTH)
+    )
+    adder
+    (
+        .a_i(out_2),
+        .b_i(bram_data_read),
+        .sum_o(bram_data_write),
+        .c_o()
+    );
     
 endmodule

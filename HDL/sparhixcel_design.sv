@@ -95,8 +95,8 @@ module sparhixcel_design
     wire [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
     reg end_feature;
-    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) - 1][0 : N_ROWS_ARRAY - 1];
-    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) - 1][0 : N_ROWS_ARRAY - 1];
+    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) - 1][0 : N_ROWS_ARRAY ];
+    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) - 1][0 : N_ROWS_ARRAY ];
     wire mux_out_reg_rst;
     wire mux_out_reg_wr_en;
     wire sel_mux_out_rst;
@@ -107,6 +107,7 @@ module sparhixcel_design
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
+    wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     genvar i;
     generate 
         for (i = 0 ; i < N_ROWS_ARRAY ; i = i + 1) begin
@@ -281,38 +282,49 @@ module sparhixcel_design
         .wr_mem2_ld_i(wr_mem2_ld_i),
         .mem_data_o(f_weight_mem)
     );    
-     
-    output_block
-    #(
-        .N_COLS_ARRAY(N_COLS_ARRAY),
-        .I_WIDTH(I_WIDTH),
-        .F_WIDTH(F_WIDTH),
-        .NUMBER_MUX_OUT_1(NUMBER_MUX_OUT_1),
-        .NUMBER_INPUT_MUX_OUT_1(NUMBER_INPUT_MUX_OUT_1),
-        .SEL_WIDTH_MUX_OUT_1(SEL_WIDTH_MUX_OUT_1), 
-        .SEL_WIDTH_MUX_OUT_2(SEL_WIDTH_MUX_OUT_2),
-        .BRAM_ADDR_WIDTH(BRAM_ADDR_WIDTH)
-    )
-    output_filter_store
-    (
-        .data_in_i(result_o),
-        .clk_i(clk_i),
-        .sel_mux_out_1_i(),
-        .sel_mux_out_2_i(),
-        .reg_rst_i(mux_out_reg_rst),
-        .reg_wr_en_i(mux_out_reg_wr_en),
-        .sel_mux_rst_i(sel_mux_out_rst),
-        .sel_mux_ld_i(sel_mux_out_ld),
-        .bram_rst_i(bram_rst),
-        .bram_wr_en_a_i(bram_wr_en_a),
-        .bram_wr_en_b_i(bram_wr_en_b),
-        .bram_addr_write_read_i(bram_addr_write_read),
-        .bram_addr_read_write_i(bram_addr_read_write),
     
-        .sel_mux_out_1_o(),
-        .sel_mux_out_2_o(),
-        .d_out_o()
-    );
     
+    genvar f,col;
+    generate
+        for(f = 0; f < $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) ; f = f + 1) begin
+            for (col = 0; col < N_COLS_ARRAY ; col = col + 1) begin
+                if(f*N_COLS_ARRAY + col < NUMBER_SUPPORTED_FILTERS) begin 
+                    output_block
+                    #(
+                        .N_COLS_ARRAY(N_COLS_ARRAY),
+                        .I_WIDTH(I_WIDTH),
+                        .F_WIDTH(F_WIDTH),
+                        .NUMBER_MUX_OUT_1(NUMBER_MUX_OUT_1),
+                        .NUMBER_INPUT_MUX_OUT_1(NUMBER_INPUT_MUX_OUT_1),
+                        .SEL_WIDTH_MUX_OUT_1(SEL_WIDTH_MUX_OUT_1), 
+                        .SEL_WIDTH_MUX_OUT_2(SEL_WIDTH_MUX_OUT_2),
+                        .BRAM_ADDR_WIDTH(BRAM_ADDR_WIDTH)
+                    )
+                    output_filter_store
+                    (
+                        .data_in_i(result_o),
+                        .clk_i(clk_i),
+                        .sel_mux_out_1_i(sel_mux_out_1[f][col]),
+                        .sel_mux_out_2_i(sel_mux_out_2[f][col]),
+                        .reg_rst_i(mux_out_reg_rst),
+                        .reg_wr_en_i(mux_out_reg_wr_en),
+                        .sel_mux_rst_i(sel_mux_out_rst),
+                        .sel_mux_ld_i(sel_mux_out_ld),
+                        .bram_rst_i(bram_rst),
+                        .bram_wr_en_a_i(bram_wr_en_a),
+                        .bram_wr_en_b_i(bram_wr_en_b),
+                        .bram_addr_write_read_i(bram_addr_write_read),
+                        .bram_addr_read_write_i(bram_addr_read_write),
+                    
+                        .sel_mux_out_1_o(sel_mux_out_1[f][col + 1]),
+                        .sel_mux_out_2_o(sel_mux_out_1[f][col + 1]),
+                        .d_out_o(out_filter[f*N_COLS_ARRAY + col])
+                    );
+                    
+                end
+            end
+        end
+    endgenerate 
+
     
 endmodule

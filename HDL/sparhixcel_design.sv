@@ -42,10 +42,10 @@ localparam INPUT_FEATURE_ADDR_WIDTH = 2**16;
 
 localparam NUMBER_SUPPORTED_FILTERS = 30;
 localparam NUMBER_MUX_OUT_1 = 4;
-localparam NUMBER_INPUT_MUX_OUT_1 = 1 + (N_COLS_ARRAY/NUMBER_MUX_OUT_1); // +1 is for having zero in input of mux for times that there is no corresponding output for that filter.
+localparam NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
 localparam SEL_WIDTH_MUX_OUT_1 = $clog2(NUMBER_INPUT_MUX_OUT_1);    
 localparam SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1);
-localparam BRAM_ADDR_WIDTH = 15;   
+localparam BRAM_ADDR_WIDTH = 11;   
 
 module sparhixcel_design
     #(
@@ -66,8 +66,23 @@ module sparhixcel_design
         input wr_rom_signals_ld_i,
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
-        input general_rst_i
-        //output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
+        input general_rst_i,
+        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final,
+        
+        input [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_i,
+        input [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_i,
+        input mux_out_reg_rst,
+        input mux_out_reg_wr_en,
+        input sel_mux_out_rst,
+        input sel_mux_out_ld,
+        input bram_rst,
+        input bram_wr_en_a,
+        input bram_wr_en_b,
+        input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read,
+        input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write,
+        
+        
+        output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o
         
     );
     
@@ -95,19 +110,24 @@ module sparhixcel_design
     wire [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
     reg end_feature;
-    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) - 1][0 : N_ROWS_ARRAY ];
-    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) - 1][0 : N_ROWS_ARRAY ];
-    wire mux_out_reg_rst;
-    wire mux_out_reg_wr_en;
-    wire sel_mux_out_rst;
-    wire sel_mux_out_ld;
-    wire bram_rst;
-    wire bram_wr_en_a;
-    wire bram_wr_en_b;
-    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read;
-    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write;
+    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1][0 : N_ROWS_ARRAY ];
+    assign sel_mux_out_1[0][0]= sel_mux_out_1_i;
+    assign sel_mux_out_2[0][0]= sel_mux_out_2_i;
+    assign sel_mux_out_1[1][0]= sel_mux_out_1_i;
+    assign sel_mux_out_2[1][0]= sel_mux_out_2_i;
+    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY  - 1][0 : N_ROWS_ARRAY ];
+//    wire mux_out_reg_rst;
+//    wire mux_out_reg_wr_en;
+//    wire sel_mux_out_rst;
+//    wire sel_mux_out_ld;
+//    wire bram_rst;
+//    wire bram_wr_en_a;
+//    wire bram_wr_en_b;
+//    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read;
+//    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
+    //wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
     genvar i;
     generate 
         for (i = 0 ; i < N_ROWS_ARRAY ; i = i + 1) begin
@@ -286,7 +306,7 @@ module sparhixcel_design
     
     genvar f,col;
     generate
-        for(f = 0; f < $ceil(NUMBER_SUPPORTED_FILTERS / N_COLS_ARRAY) ; f = f + 1) begin
+        for(f = 0; f < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1)/ N_COLS_ARRAY ; f = f + 1) begin
             for (col = 0; col < N_COLS_ARRAY ; col = col + 1) begin
                 if(f*N_COLS_ARRAY + col < NUMBER_SUPPORTED_FILTERS) begin 
                     output_block
@@ -317,7 +337,7 @@ module sparhixcel_design
                         .bram_addr_read_write_i(bram_addr_read_write),
                     
                         .sel_mux_out_1_o(sel_mux_out_1[f][col + 1]),
-                        .sel_mux_out_2_o(sel_mux_out_1[f][col + 1]),
+                        .sel_mux_out_2_o(sel_mux_out_2[f][col + 1]),
                         .d_out_o(out_filter[f*N_COLS_ARRAY + col])
                     );
                     
@@ -325,6 +345,10 @@ module sparhixcel_design
             end
         end
     endgenerate 
-
+    
+    
+    always @(*) begin
+        final_output_o = out_filter[sel_mux_final];  
+    end
     
 endmodule

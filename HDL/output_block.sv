@@ -22,14 +22,14 @@
 
 module output_block
     #(
-    parameter N_COLS_ARRAY = 16,
+    parameter N_COLS_ARRAY = 3,
     parameter I_WIDTH = 8,
     parameter F_WIDTH = 8,
-    parameter NUMBER_MUX_OUT_1 = 4,
+    parameter NUMBER_MUX_OUT_1 = 1,
     parameter NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 - 1) / NUMBER_MUX_OUT_1,
     parameter SEL_WIDTH_MUX_OUT_1 = $clog2(1 + NUMBER_INPUT_MUX_OUT_1),  // +1 is for having zero in input of mux for times that there is no corresponding output for that filter.  
     parameter SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1),
-    parameter BRAM_ADDR_WIDTH = 15
+    parameter BRAM_ADDR_WIDTH = 11
     )
     (
     input signed [F_WIDTH + I_WIDTH - 1 : 0] data_in_i [0 : N_COLS_ARRAY - 1],
@@ -170,7 +170,7 @@ module output_block
     (
         .a_i(out_2),
         .b_i(bram_data_read),
-        .sum_o(bram_data_write),
+        .sum_o(bram_data_write_a),
         .c_o()
     );
     

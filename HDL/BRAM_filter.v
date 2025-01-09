@@ -23,7 +23,7 @@
 module BRAM_filter
     #(
     parameter DATA_WIDTH = 16,
-    parameter ADDR_WIDTH = 15 
+    parameter ADDR_WIDTH = 11 
     )
     (
     input clk_i,
@@ -34,35 +34,26 @@ module BRAM_filter
     input [ADDR_WIDTH - 1 : 0] addr_b_i,
     input [DATA_WIDTH - 1 : 0] data_in_a_i,
     input [DATA_WIDTH - 1 : 0] data_in_b_i,
-    output reg [DATA_WIDTH - 1 : 0] data_out_a_o,
-    output reg [DATA_WIDTH - 1 : 0] data_out_b_o 
+    output [DATA_WIDTH - 1 : 0] data_out_a_o,
+    output [DATA_WIDTH - 1 : 0] data_out_b_o 
     );
     
-   
-    reg [DATA_WIDTH-1:0] bram [0:(2**ADDR_WIDTH)-1];
+blk_mem_gen_0 bram (
+  .clka(clk_i),    // input wire clka
+  .rsta(bram_rst_i),    // input wire rsta
+  .ena(1),      // input wire ena
+  .wea(bram_wr_en_a_i),      // input wire [0 : 0] wea
+  .addra(addr_a_i),  // input wire [10 : 0] addra
+  .dina(data_in_a_i),    // input wire [15 : 0] dina
+  .douta(data_out_a_o),  // output wire [15 : 0] douta
+  .clkb(clk_i),    // input wire clkb
+  .rstb(bram_rst_i),    // input wire rstb
+  .enb(1),      // input wire enb
+  .web(bram_wr_en_a_i),      // input wire [0 : 0] web
+  .addrb(addr_b_i),  // input wire [10 : 0] addrb
+  .dinb(data_in_b_i),    // input wire [15 : 0] dinb
+  .doutb(data_out_b_o)  // output wire [15 : 0] doutb
+);
 
-    // Port A Read/Write Process
-    always @(posedge clk_i or posedge bram_rst_i) begin
-        if (bram_rst_i) begin
-            data_out_a_o <= 0;  // Reset output to 0
-        end else begin
-            if (bram_wr_en_a_i) begin
-                bram[addr_a_i] <= data_in_a_i; // Write to BRAM on port A
-            end
-            data_out_a_o <= bram[addr_a_i];    // Read from BRAM on port A
-        end
-    end
-
-    // Port B Read/Write Process
-    always @(posedge clk_i or posedge bram_rst_i) begin
-        if (bram_rst_i) begin
-            data_out_b_o <= 0;  // Reset output to 0
-        end else begin
-            if (bram_wr_en_b_i) begin
-                bram[addr_b_i] <= data_in_b_i; // Write to BRAM on port B
-            end
-            data_out_b_o <= bram[addr_b_i];    // Read from BRAM on port B
-        end
-    end
-    
 endmodule
+

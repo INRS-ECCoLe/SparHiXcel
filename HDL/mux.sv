@@ -35,10 +35,8 @@ module mux
     );
     
     always @(*) begin
-        if (sel_mux_i == 0) begin
-            data_out_o = {(I_WIDTH + F_WIDTH){1'b0}};  // Select the zero input
-        end else begin
-            data_out_o = data_in_i[sel_mux_i - 1]; // Select the appropriate data input
-        end
+     
+        data_out_o = data_in_i[sel_mux_i]; // Select the appropriate data input
+        
     end
 endmodule

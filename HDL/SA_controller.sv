@@ -40,17 +40,30 @@ module SA_controller
         parameter LOAD_COUNTER_WIDTH = 4,
         parameter READY_COUNTER_WIDTH = 2,
         parameter WAITING_OP_COUNTER_WIDTH = 4,
-        parameter COUNTER_ROUND_WIDTH = 3,
-        parameter INPUT_FEATURE_ADDR_WIDTH = 5
+        //parameter COUNTER_ROUND_WIDTH = 3,
+        parameter INPUT_FEATURE_ADDR_WIDTH = 2**16,
+        
+        parameter MAX_TOTAL_FILTER_NUM = 500,
+        parameter NUMBER_SUPPORTED_FILTERS = 30,
+        parameter MAX_TOTAL_CHANNEL_NUM = 1000,
+        parameter MAX_TOTAL_INPUT_ADDRESS_FOR_A_LAYER = 1000*1000
+        
     )
     (
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input [$clog2(N+1)-1 : 0]filter_size_i,
         input clk_i,
         input general_rst_i,
-        input end_feature_i,
-        input [COUNTER_ROUND_WIDTH - 1 : 0] max_round_weight_i,
-        //input end_weight_i,
+        //input end_feature_i,
+        //input [COUNTER_ROUND_WIDTH - 1 : 0] max_round_weight_i,
+        input [$clog2(MAX_TOTAL_FILTER_NUM) - 1 : 0] total_num_filters_i,
+        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
+        input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
+        input [$clog2(MAX_TOTAL_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] total_num_inputs_i,
+        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
+        input input_ready_i, //from DRAM
+        input weight_ready_i,
+        input bram_ready_i,
         output [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] in_feature_addr_o,
         output reg rst_o,
         output reg load_o,
@@ -96,32 +109,57 @@ module SA_controller
     wire [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr [0 : N_ROWS_ARRAY - 1];
     wire en_adder_node [0 : N_ROWS_ARRAY - 1];
     
+    wire num_input_a_round_rst;
+    wire num_input_a_round_ld;
+   
+    
      
-    localparam [2:0]
-        reset = 3'b000 , load = 3'b001,
-        ready = 3'b010 , start = 3'b011 , waiting = 3'b100;
-    reg [2:0] p_state, n_state;
+    localparam [3:0]
+        reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
+        ready = 4'b0011 , start = 4'b0100 , waiting = 4'b0101,
+        store = 4'b0110 , next_channels = 4'b0111 , next_filters = 4'b1000 ,
+        next_input = 4'b1001, wait_bram = 4'b1010;
+    reg [3:0] p_state, n_state;
 
-    always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: state_transition
+    always @(p_state or general_rst_i or input_ready_i or load_count_num or ready_count_num or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size_i) begin: state_transition
         case(p_state)
             reset:
-                if (general_rst_i == 0 && end_weight == 0) n_state = load;
+                if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1) n_state = load;
+                else if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight; 
                 else n_state = reset;
+            wait_weight:
+                if (weight_ready_i == 1) n_state = load;
+                else n_state = wait_weight; 
             load:
-                if (load_count_num == N_COLS_ARRAY-1) n_state = ready;
+                if (load_count_num == N_COLS_ARRAY-1) n_state = wait_bram;
                 else n_state = load;
+            wait_bram:
+                if (bram_ready_i == 1) n_state = ready;
+                else n_state = wait_bram;
             ready:
                 if (ready_count_num == 2) n_state = start;
                 else n_state = ready;
             start:
                 if (general_rst_i == 1) n_state = reset;
-                else if (end_feature_i == 1) n_state = waiting;
+                else if (bram_ready_i == 0 && num_input_a_round == num_input_a_round_i - 1 && input_ready_i == 0) n_state = waiting;
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
                 else if (end_weight == 1 && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = reset;
                 else if ((waiting_op_count_num == 2 * (filter_size_i - 1) + 6))  n_state = load;
                 else n_state = waiting;
+            store:
+                if (input_ready_i == 1) n_state = ;
+                else n_state = ;      
+            next_channel:
+                if () n_state = ;
+                else n_state = ;
+            next_filters:
+                if () n_state = ;
+                else n_state = ;   
+            next_input:
+                if () n_state = ;
+                else n_state = ;
             default:
                 n_state = reset;
         endcase
@@ -481,13 +519,15 @@ module SA_controller
         if (load_count_num == N_COLS_ARRAY-1) round_weight_ld = 1;
         else round_weight_ld = 0;
     end 
+    /*
     always @(*) begin
         if (round_num_weight == max_round_weight_i) end_weight = 1;
         else end_weight = 0;
     end 
     
     assign addrs_rom_signal_o = round_num_weight * N_COLS_ARRAY + load_count_num;
-    
+    */
+    /*
     counter
     #(
         .COUNTER_WIDTH(COUNTER_ROUND_WIDTH)    
@@ -499,6 +539,8 @@ module SA_controller
         .counter_ld_i(round_weight_ld),
         .count_num_o(round_num_weight)
     );
+    */
+    
     //counter for waiting required time for finishing operational stage after finishing input features.
      
     counter
@@ -541,5 +583,21 @@ module SA_controller
         .counter_ld_i(in_feature_address_ld),
         .count_num_o(in_feature_addr_o)
     );
+     
+     //counter for num_input_a_round.
+
+      
+    counter
+    #(
+        .COUNTER_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH))    
+    )
+    num_input
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(num_input_a_round_rst),
+        .counter_ld_i(num_input_a_round_ld),
+        .count_num_o(num_input_a_round)
+    );    
+    
 endmodule
 

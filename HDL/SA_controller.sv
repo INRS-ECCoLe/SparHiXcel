@@ -43,10 +43,10 @@ module SA_controller
         //parameter COUNTER_ROUND_WIDTH = 3,
         parameter INPUT_FEATURE_ADDR_WIDTH = 2**16,
         
-        parameter MAX_TOTAL_FILTER_NUM = 500,
+        parameter MAX_ITERATION_FILTER_NUM = 10,
         parameter NUMBER_SUPPORTED_FILTERS = 30,
-        parameter MAX_TOTAL_CHANNEL_NUM = 1000,
-        parameter MAX_TOTAL_INPUT_ADDRESS_FOR_A_LAYER = 1000*1000
+        parameter MAX_TOTAL_CHANNEL_NUM = 50,
+        parameter MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 10
         
     )
     (
@@ -56,10 +56,12 @@ module SA_controller
         input general_rst_i,
         //input end_feature_i,
         //input [COUNTER_ROUND_WIDTH - 1 : 0] max_round_weight_i,
-        input [$clog2(MAX_TOTAL_FILTER_NUM) - 1 : 0] total_num_filters_i,
+        //input [$clog2(MAX_TOTAL_FILTER_NUM) - 1 : 0] total_num_filters_i,
+        input [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters_i,
         input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
         input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
-        input [$clog2(MAX_TOTAL_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] total_num_inputs_i,
+        //input [$clog2(MAX_TOTAL_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] total_num_inputs_i,
+        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
         input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
         input input_ready_i, //from DRAM
         input weight_ready_i,
@@ -113,8 +115,25 @@ module SA_controller
     wire num_input_a_round_ld;
     wire num_channel_rst;
     reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_channel;
-    reg increment_done_ch;
-    
+    reg increment_done_ch;   
+    reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters;
+    wire iteration_num_filters_rst;
+    wire iteration_num_filters_ld;
+    reg [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round;
+    wire num_filters_a_round_rst;
+    wire num_filters_a_round_ld;
+    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels;
+    wire total_num_channels_rst;
+    wire total_num_channels_ld;
+    reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs;
+    wire iteration_num_inputs_rst;
+    wire iteration_num_inputs_ld;
+    reg [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] number_input_a_round;
+    wire number_input_a_round_rst;
+    wire number_input_a_round_ld;
+    reg [$clog2(N+1)-1 : 0]filter_size;
+    wire filter_size_rst;
+    wire filter_size_ld;
      
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
@@ -123,7 +142,7 @@ module SA_controller
         next_input = 4'b1001, wait_bram = 4'b1010;
     reg [3:0] p_state, n_state;
 
-    always @(p_state or general_rst_i or input_ready_i or load_count_num or ready_count_num or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size_i) begin: state_transition
+    always @(p_state or general_rst_i or input_ready_i or load_count_num or ready_count_num or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: state_transition
         case(p_state)
             reset:
                 if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1) n_state = load;
@@ -143,15 +162,15 @@ module SA_controller
                 else n_state = ready;
             start:
                 if (general_rst_i == 1) n_state = reset;
-                else if (bram_ready_i == 0 && (num_input_a_round == num_input_a_round_i - 1) && input_ready_i == 0) n_state = waiting;
+                else if (bram_ready_i == 0 && (count_input_a_round == number_input_a_round - 1) && input_ready_i == 0) n_state = waiting;
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
-                else if ((num_channel == total_num_channels_i - 1) && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = store;
-                else if ((num_channel < total_num_channels_i - 1 )&& (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = next_channels;
+                else if ((num_channel == total_num_channels) && (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = store;
+                else if ((num_channel < total_num_channels)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = next_channels;
                 else n_state = waiting;
             store:
-                if ( == total_num_filters_i - 1) n_state  ;
+                if (( == ) && ( )) n_state = ;
                 else n_state = ;      
             next_channel:
                 if () n_state = ;
@@ -168,7 +187,7 @@ module SA_controller
         
     end
      
-    always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size_i) begin: output_assignments
+    always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size) begin: output_assignments
         case(p_state)
             reset: begin
                 rst_col = 1;
@@ -401,12 +420,12 @@ module SA_controller
     always@ (*) begin  
         b = 0;
         for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
-            if (b == filter_size_i) begin 
+            if (b == filter_size) begin 
                 b = 0;  
             end
             row_num_o[i] = b + 1'b1;
             b = b + 1; 
-            if (row_num_o[i] == filter_size_i) sel_mux_node_o[i] = 0;
+            if (row_num_o[i] == filter_size) sel_mux_node_o[i] = 0;
             else sel_mux_node_o[i] = 1;   
         end
         
@@ -500,8 +519,88 @@ module SA_controller
             end 
         end
     end
+
+    //Register for num_input_a_round
+    always @ (posedge clk_i or posedge filter_size_rst) begin 
+        
+        if (filter_size_rst) begin
+       
+            filter_size <= {$clog2(N+1){1'b0}};
+                   
+        end else if (filter_size_ld) begin
+            
+            filter_size <= filter_size_i;
+           
+        end
+    end
+    //Register for number_input_a_round
+    always @ (posedge clk_i or posedge number_input_a_round_rst) begin 
+        
+        if (number_input_a_round_rst) begin
+       
+            number_input_a_round <= {$clog2(INPUT_FEATURE_ADDR_WIDTH){1'b0}};
+                   
+        end else if (number_input_a_round_ld) begin
+            
+            number_input_a_round <= num_input_a_round_i;
+           
+        end
+    end
+    //Register for iteration_num_inputs
+    always @ (posedge clk_i or posedge iteration_num_inputs_rst) begin 
+        
+        if (iteration_num_inputs_rst) begin
+       
+            iteration_num_inputs <= {$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER){1'b0}};
+                   
+        end else if (iteration_num_inputs_ld) begin
+            
+            iteration_num_inputs <= iteration_num_inputs_i;
+           
+        end
+    end
     
-    //Register and adder to track the number of processed filters 
+    //Register for iteration_num_filters
+    always @ (posedge clk_i or posedge iteration_num_filters_rst) begin 
+        
+        if (iteration_num_filters_rst) begin
+       
+            iteration_num_filters <= {$clog2(MAX_ITERATION_FILTER_NUM){1'b0}};
+                   
+        end else if (iteration_num_filters_ld) begin
+            
+            iteration_num_filters <= iteration_num_filters_i;
+           
+        end
+    end
+    //Register for num_filters_a_round
+    always @ (posedge clk_i or posedge num_filters_a_round_rst) begin 
+        
+        if (num_filters_a_round_rst) begin
+       
+            num_filters_a_round <= {$clog2(NUMBER_SUPPORTED_FILTERS){1'b0}};
+                   
+        end else if (num_filters_a_round_ld) begin
+            
+            num_filters_a_round <= num_filters_a_round_i;
+           
+        end
+    end
+
+    //Register for total_num_channels
+    always @ (posedge clk_i or posedge total_num_channels_rst) begin 
+        
+        if (total_num_channels_rst) begin
+       
+            total_num_channels <= {$clog2(MAX_TOTAL_CHANNEL_NUM){1'b0}};
+                   
+        end else if (total_num_channels_ld) begin
+            
+            total_num_channels <= total_num_channels_i;
+           
+        end
+    end 
+    //Register and adder to track the number of processed channels 
 
     always @(posedge clk_i or posedge num_channel_rst) begin
         if (num_channel_rst) begin
@@ -509,10 +608,10 @@ module SA_controller
             increment_done_ch <= 0; // Reset the increment_done_ch flag
         end else if (p_state == waiting && !increment_done_ch) begin
         
-            num_channel <= num_channel + N_ROWS_ARRAY/filter_size_i; // Increment by 5 (you can change this value)
+            num_channel <= num_channel + N_ROWS_ARRAY/filter_size; // Increment by 5 (you can change this value)
             // Set the flag to indicate the increment is done
             increment_done_ch <= 1;
-        end else if (p_state == waiting) begin
+        end else if (p_state != waiting) begin
             // Reset the flag when leaving the TASK_STATE
             increment_done_ch <= 0;
         end
@@ -603,7 +702,21 @@ module SA_controller
         .count_num_o(in_feature_addr_o)
     );
      
-     //counter for num_input_a_round.
+     //counter for count_input_a_round.
+
+      
+    counter
+    #(
+        .COUNTER_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH))    
+    )
+    count_input
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(count_input_a_round_rst),
+        .counter_ld_i(count_input_a_round_ld),
+        .count_num_o(count_input_a_round)
+    );    
+     //counter for count_round_input.
 
       
     counter
@@ -613,11 +726,10 @@ module SA_controller
     num_input
     (
         .clk_i(clk_i),
-        .counter_rst_i(num_input_a_round_rst),
-        .counter_ld_i(num_input_a_round_ld),
-        .count_num_o(num_input_a_round)
-    );    
-    
+        .counter_rst_i(count_input_a_round_rst),
+        .counter_ld_i(count_input_a_round_ld),
+        .count_num_o(count_input_a_round)
+    ); 
      
 endmodule
 

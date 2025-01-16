@@ -151,7 +151,7 @@ module SA_controller
                 else if ((num_channel < total_num_channels_i - 1 )&& (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = next_channels;
                 else n_state = waiting;
             store:
-                if ( == total_num_filters_i - 1) n_state = ;
+                if ( == total_num_filters_i - 1) n_state  ;
                 else n_state = ;      
             next_channel:
                 if () n_state = ;

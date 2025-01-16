@@ -111,7 +111,9 @@ module SA_controller
     
     wire num_input_a_round_rst;
     wire num_input_a_round_ld;
-   
+    wire num_channel_rst;
+    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_channel;
+    reg increment_done_ch;
     
      
     localparam [3:0]
@@ -141,15 +143,15 @@ module SA_controller
                 else n_state = ready;
             start:
                 if (general_rst_i == 1) n_state = reset;
-                else if (bram_ready_i == 0 && num_input_a_round == num_input_a_round_i - 1 && input_ready_i == 0) n_state = waiting;
+                else if (bram_ready_i == 0 && (num_input_a_round == num_input_a_round_i - 1) && input_ready_i == 0) n_state = waiting;
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
-                else if (end_weight == 1 && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = reset;
-                else if ((waiting_op_count_num == 2 * (filter_size_i - 1) + 6))  n_state = load;
+                else if ((num_channel == total_num_channels_i - 1) && (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = store;
+                else if ((num_channel < total_num_channels_i - 1 )&& (waiting_op_count_num == 2 * (filter_size_i - 1) + 6)) n_state = next_channels;
                 else n_state = waiting;
             store:
-                if (input_ready_i == 1) n_state = ;
+                if ( == total_num_filters_i - 1) n_state = ;
                 else n_state = ;      
             next_channel:
                 if () n_state = ;
@@ -499,6 +501,23 @@ module SA_controller
         end
     end
     
+    //Register and adder to track the number of processed filters 
+
+    always @(posedge clk_i or posedge num_channel_rst) begin
+        if (num_channel_rst) begin
+            num_channel <= {$clog2(MAX_TOTAL_CHANNEL_NUM){1'b0}}; // Reset num_channel
+            increment_done_ch <= 0; // Reset the increment_done_ch flag
+        end else if (p_state == waiting && !increment_done_ch) begin
+        
+            num_channel <= num_channel + N_ROWS_ARRAY/filter_size_i; // Increment by 5 (you can change this value)
+            // Set the flag to indicate the increment is done
+            increment_done_ch <= 1;
+        end else if (p_state == waiting) begin
+            // Reset the flag when leaving the TASK_STATE
+            increment_done_ch <= 0;
+        end
+    end
+    
     //counter for loading signals and weights
       
     counter
@@ -599,5 +618,6 @@ module SA_controller
         .count_num_o(num_input_a_round)
     );    
     
+     
 endmodule
 

@@ -134,7 +134,14 @@ module SA_controller
     reg [$clog2(N+1)-1 : 0]filter_size;
     wire filter_size_rst;
     wire filter_size_ld;
-     
+    reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] count_round_input;
+    reg increment_done_round_input;
+    wire count_round_input_rst;
+    reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] count_round_filter;
+    reg increment_done_round_filter;
+    wire count_round_filter_rst;
+    
+      
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
         ready = 4'b0011 , start = 4'b0100 , waiting = 4'b0101,
@@ -608,15 +615,46 @@ module SA_controller
             increment_done_ch <= 0; // Reset the increment_done_ch flag
         end else if (p_state == waiting && !increment_done_ch) begin
         
-            num_channel <= num_channel + N_ROWS_ARRAY/filter_size; // Increment by 5 (you can change this value)
+            num_channel <= num_channel + N_ROWS_ARRAY/filter_size; 
             // Set the flag to indicate the increment is done
             increment_done_ch <= 1;
         end else if (p_state != waiting) begin
-            // Reset the flag when leaving the TASK_STATE
+            // Reset the flag when leaving the waiting
             increment_done_ch <= 0;
         end
     end
+    //Register and adder to track count_round_input 
     
+    always @(posedge clk_i or posedge count_round_input_rst) begin
+        if (num_channel_rst) begin
+            count_round_input <= {$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER){1'b0}}; // Reset count_round_input
+            increment_done_round_input <= 0; // Reset the increment_done_round_input flag
+        end else if (p_state == store && !increment_done_ch) begin
+        
+            count_round_input <= count_round_input + 1; 
+            // Set the flag to indicate the increment is done
+            increment_done_round_input <= 1;
+        end else if (p_state != store) begin
+            // Reset the flag when leaving the store
+            increment_done_round_input <= 0;
+        end
+    end
+    //Register and adder to track count_round_filter 
+
+    always @(posedge clk_i or posedge count_round_filter_rst) begin
+        if (count_round_filter_rst) begin
+            count_round_filter <= {$clog2(MAX_ITERATION_FILTER_NUM){1'b0}}; // Reset count_round_filter
+            increment_done_round_filter <= 0; // Reset the increment_done_round_filter flag
+        end else if (p_state == store && !increment_done_ch) begin
+        
+            count_round_filter <= count_round_filter + 1; 
+            // Set the flag to indicate the increment is done
+            increment_done_round_filter <= 1;
+        end else if (p_state != store) begin
+            // Reset the flag when leaving the store
+            increment_done_round_filter <= 0;
+        end
+    end
     //counter for loading signals and weights
       
     counter
@@ -716,20 +754,7 @@ module SA_controller
         .counter_ld_i(count_input_a_round_ld),
         .count_num_o(count_input_a_round)
     );    
-     //counter for count_round_input.
-
-      
-    counter
-    #(
-        .COUNTER_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH))    
-    )
-    num_input
-    (
-        .clk_i(clk_i),
-        .counter_rst_i(count_input_a_round_rst),
-        .counter_ld_i(count_input_a_round_ld),
-        .count_num_o(count_input_a_round)
-    ); 
+ 
      
 endmodule
 

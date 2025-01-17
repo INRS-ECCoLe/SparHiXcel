@@ -494,7 +494,53 @@ module SA_controller
             end   
         end
     end
+    //Register for sel_mux_out_1_o
+    reg sel_mux_out_1_rst;
+    reg sel_mux_out_1_ld;
+    reg sel_mux_out_2_rst;
+    reg sel_mux_out_2_ld; 
+    reg bram_wr_en_a_rst;
+    reg bram_wr_en_a_ld;
+    always @ (posedge clk_i or posedge sel_mux_out_1_rst) begin 
+        
+        if (sel_mux_out_1_rst) begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                sel_mux_out_1_o [i] <= 0;
+            end    
+        end else if (sel_mux_out_1_ld) begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                sel_mux_out_1_o [i] <= sel_mux_out_1 [i];
+            end   
+        end
+    end
+    //Register for sel_mux_out_2_o
     
+    always @ (posedge clk_i or posedge sel_mux_out_2_rst) begin 
+        
+        if (sel_mux_out_2_rst) begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                sel_mux_out_2_o [i] <= 0;
+            end    
+        end else if (sel_mux_out_2_ld) begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                sel_mux_out_2_o [i] <= sel_mux_out_2 [i];
+            end   
+        end
+    end
+    //Register for bram_wr_en_a_o
+    
+    always @ (posedge clk_i or posedge bram_wr_en_a_rst) begin 
+        
+        if (bram_wr_en_a_rst) begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                bram_wr_en_a_o [i] <= 0;
+            end    
+        end else if (bram_wr_en_a_ld) begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                bram_wr_en_a_o [i] <= bram_wr_en_a [i];
+            end   
+        end
+    end
     //Register for number_of_columns_o
     
     always @ (posedge clk_i or posedge number_of_columns_rst) begin 

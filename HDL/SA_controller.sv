@@ -97,7 +97,7 @@ module SA_controller
     reg counter_ready_rst;
     reg counter_ready_ld;
     //reg counter_address_rom_rst;
-    reg round_weight_ld;
+    //reg round_weight_ld;
     reg in_feature_address_rst;
     reg in_feature_address_ld;
     reg end_weight;
@@ -674,14 +674,14 @@ module SA_controller
         .counter_ld_i(counter_load_ld),
         .count_num_o(load_count_num)
     );
-    
+     /*
     //counter for counting the number of rounds required by weights
 
     always @(*) begin
         if (load_count_num == N_COLS_ARRAY-1) round_weight_ld = 1;
         else round_weight_ld = 0;
     end 
-    /*
+   
     always @(*) begin
         if (round_num_weight == max_round_weight_i) end_weight = 1;
         else end_weight = 0;

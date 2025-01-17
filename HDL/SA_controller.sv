@@ -46,8 +46,10 @@ module SA_controller
         parameter MAX_ITERATION_FILTER_NUM = 10,
         parameter NUMBER_SUPPORTED_FILTERS = 30,
         parameter MAX_TOTAL_CHANNEL_NUM = 50,
-        parameter MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 10
-        
+        parameter MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 10,
+        parameter BRAM_ADDR_WIDTH = 11,
+        parameter SEL_WIDTH_MUX_OUT_1 = 2,
+        parameter SEL_WIDTH_MUX_OUT_2 = 2
     )
     (
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
@@ -75,12 +77,18 @@ module SA_controller
         output reg rd_weight_rst_o,
         output reg rd_feature_ld_o,
         output reg rd_rom_signals_ld_o,
-        output [SIG_ADDRS_WIDTH - 1 : 0]addrs_rom_signal_o,
+        output [SIG_ADDRS_WIDTH - 1 : 0] addrs_rom_signal_o,
+        output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read_o,
+        output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write_o,
         output reg [SEL_WIDTH - 1: 0] f_sel_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH -1 : 0]row_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] number_of_columns_o[0 : N_ROWS_ARRAY - 1],
         output reg [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_o [0 : N_ROWS_ARRAY - 1],
+        output reg [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_o [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1],
+        output reg [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_o [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1],
+        output reg bram_wr_en_a_o [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
+        output reg bram_wr_en_b_o,
         output reg en_adder_node_o [0 : N_ROWS_ARRAY - 1],
         output reg sel_mux_node_o [0 : N_ROWS_ARRAY - 1]                
     );
@@ -142,7 +150,12 @@ module SA_controller
     wire count_round_filter_rst;
     reg addrs_rom_signal_rst;
     reg addrs_rom_signal_ld;
-      
+    wire bram_addr_write_read_rst;
+    wire bram_addr_write_read_ld;
+    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
+    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
+    wire bram_wr_en_a [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
+    wire bram_wr_en_b;  
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
         ready = 4'b0011 , start = 4'b0100 , waiting = 4'b0101,
@@ -414,7 +427,7 @@ module SA_controller
         
     
     // allocating ROM signal data to the corresponding signals and then we will send these signals to their registers we make in the controller.
-    genvar j;
+    genvar j,c;
     generate
         for (j = 0 ; j < N_ROWS_ARRAY ; j = j + 1) begin
             assign f_sel[j] =  rom_signals_data_i [(j + 1)* SEL_WIDTH - 1 : j * SEL_WIDTH];
@@ -422,6 +435,12 @@ module SA_controller
             assign sel_mux_tr [j] = rom_signals_data_i [(j+1) * SEL_MUX_TR_WIDTH  + N_ROWS_ARRAY * (NUM_COL_WIDTH + SEL_WIDTH) - 1 : j * SEL_MUX_TR_WIDTH  + N_ROWS_ARRAY * (NUM_COL_WIDTH + SEL_WIDTH)];
             assign en_adder_node [j] = rom_signals_data_i [(j+1) + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH) - 1 : j + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH)];
         
+        end
+        for (c = 0 ; c <(NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; c = c + 1) begin
+            assign sel_mux_out_1[c] = rom_signals_data_i [(c + 1) * SEL_WIDTH_MUX_OUT_1 + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH + 1) - 1 : c * SEL_WIDTH_MUX_OUT_1 + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH + 1)];
+            assign sel_mux_out_2[c] = rom_signals_data_i [(c + 1) * SEL_WIDTH_MUX_OUT_2 +  ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) * SEL_WIDTH_MUX_OUT_1 + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH + 1) - 1 : c * SEL_WIDTH_MUX_OUT_2 +  ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) * SEL_WIDTH_MUX_OUT_1 + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH + 1)];
+            assign bram_wr_en_a[c] = rom_signals_data_i [(c + 1) +  ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) * (SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2) + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH + 1) - 1 : c +  ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) * (SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2) + N_ROWS_ARRAY * (SEL_MUX_TR_WIDTH + NUM_COL_WIDTH + SEL_WIDTH + 1)];
+
         end
     endgenerate
     // generating row numbers by a combinational hardware.  
@@ -762,8 +781,6 @@ module SA_controller
     );
      
      //counter for count_input_a_round.
-
-      
     counter
     #(
         .COUNTER_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH))    
@@ -775,7 +792,22 @@ module SA_controller
         .counter_ld_i(count_input_a_round_ld),
         .count_num_o(count_input_a_round)
     );    
- 
+    
+
+    
+    
+      //counter for bram_addr_write_read.
+    counter
+    #(
+        .COUNTER_WIDTH(BRAM_ADDR_WIDTH)    
+    )
+    bram_address
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(bram_addr_write_read_rst),
+        .counter_ld_i(bram_addr_write_read_ld),
+        .count_num_o(bram_addr_write_read_o)
+    );
      
 endmodule
 

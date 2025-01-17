@@ -96,12 +96,12 @@ module SA_controller
     reg counter_load_ld;
     reg counter_ready_rst;
     reg counter_ready_ld;
-    reg counter_address_rom_rst;
+    //reg counter_address_rom_rst;
     reg round_weight_ld;
     reg in_feature_address_rst;
     reg in_feature_address_ld;
     reg end_weight;
-    wire [COUNTER_ROUND_WIDTH - 1 : 0]round_num_weight;
+    //wire [COUNTER_ROUND_WIDTH - 1 : 0]round_num_weight;
     //reg counter_address_rom_ld;
     wire [READY_COUNTER_WIDTH - 1 : 0] ready_count_num;
     wire [LOAD_COUNTER_WIDTH - 1 : 0] load_count_num;  
@@ -140,7 +140,8 @@ module SA_controller
     reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] count_round_filter;
     reg increment_done_round_filter;
     wire count_round_filter_rst;
-    
+    reg addrs_rom_signal_rst;
+    reg addrs_rom_signal_ld;
       
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
@@ -149,7 +150,7 @@ module SA_controller
         next_input = 4'b1001, wait_bram = 4'b1010;
     reg [3:0] p_state, n_state;
 
-    always @(p_state or general_rst_i or input_ready_i or load_count_num or ready_count_num or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: state_transition
+    always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: state_transition
         case(p_state)
             reset:
                 if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1) n_state = load;
@@ -173,28 +174,33 @@ module SA_controller
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
-                else if ((num_channel == total_num_channels) && (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = store;
+                else if ((num_channel >= total_num_channels) && (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = store;
                 else if ((num_channel < total_num_channels)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = next_channels;
                 else n_state = waiting;
             store:
-                if (( == ) && ( )) n_state = ;
-                else n_state = ;      
-            next_channel:
-                if () n_state = ;
-                else n_state = ;
+                if ((count_round_filter == iteration_num_filters) && (count_round_input == iteration_num_inputs)) n_state = reset;
+                else if ((count_round_filter == iteration_num_filters) && (count_round_input != iteration_num_inputs)) n_state = next_input; 
+                else if (count_round_filter != iteration_num_filters) n_state = next_filters; 
+                else n_state = store;      
+            next_channels:
+                if (input_ready_i == 1 && weight_ready_i == 1) n_state = load;
+                else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
+                else n_state = next_channels;
             next_filters:
-                if () n_state = ;
-                else n_state = ;   
+                if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
+                else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
+                else n_state = next_filters;   
             next_input:
-                if () n_state = ;
-                else n_state = ;
+                if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
+                else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
+                else n_state = next_input;
             default:
                 n_state = reset;
         endcase
         
     end
      
-    always @(p_state or general_rst_i or end_weight or load_count_num or ready_count_num or end_feature_i or waiting_op_count_num or filter_size) begin: output_assignments
+    always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: output_assignments
         case(p_state)
             reset: begin
                 rst_col = 1;
@@ -205,7 +211,7 @@ module SA_controller
                 counter_load_rst = 1;
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 1;
-                counter_address_rom_rst = 1;
+                //counter_address_rom_rst = 1;
                 in_feature_address_rst = 1;
                 rd_weight_rst_o = 1;
                 
@@ -238,7 +244,7 @@ module SA_controller
                 counter_load_rst = 0;
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 0;
-                counter_address_rom_rst = 0;
+                //counter_address_rom_rst = 0;
                 in_feature_address_rst = 1;
                 rd_weight_rst_o = 0;
                 
@@ -271,7 +277,7 @@ module SA_controller
                 counter_load_rst = 1;
                 counter_waiting_op_rst = 0;
                 counter_ready_rst = 0;
-                counter_address_rom_rst = 0;
+                //counter_address_rom_rst = 0;
                 in_feature_address_rst = 0;
                 rd_weight_rst_o = 0; 
                 
@@ -305,7 +311,7 @@ module SA_controller
                 counter_load_rst = 0;
                 counter_waiting_op_rst = 0;
                 counter_ready_rst = 1;
-                counter_address_rom_rst = 0;
+                //counter_address_rom_rst = 0;
                 in_feature_address_rst = 0;
                 rd_weight_rst_o = 0;
                 
@@ -338,7 +344,7 @@ module SA_controller
                 counter_load_rst = 0;
                 counter_waiting_op_rst = 0;
                 counter_ready_rst = 0;
-                counter_address_rom_rst = 0;
+                //counter_address_rom_rst = 0;
                 in_feature_address_rst = 1;
                 rd_weight_rst_o = 0;
                 
@@ -372,7 +378,7 @@ module SA_controller
                 counter_load_rst = 1;
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 1;
-                counter_address_rom_rst = 1;
+                //counter_address_rom_rst = 1;
                 in_feature_address_rst = 1;
                 rd_weight_rst_o = 1;
                 
@@ -696,6 +702,21 @@ module SA_controller
         .count_num_o(round_num_weight)
     );
     */
+         //counter for addrs_rom_signal_o.
+
+      
+    counter
+    #(
+        .COUNTER_WIDTH(SIG_ADDRS_WIDTH)    
+    )
+    addrs_rom_signal
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(addrs_rom_signal_rst),
+        .counter_ld_i(addrs_rom_signal_ld),
+        .count_num_o(addrs_rom_signal_o)
+    );
+     
     
     //counter for waiting required time for finishing operational stage after finishing input features.
      

@@ -90,7 +90,14 @@ module SA_controller
         output reg bram_wr_en_a_o [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
         output reg bram_wr_en_b_o,
         output reg en_adder_node_o [0 : N_ROWS_ARRAY - 1],
-        output reg sel_mux_node_o [0 : N_ROWS_ARRAY - 1]                
+        output reg sel_mux_node_o [0 : N_ROWS_ARRAY - 1],
+        output reg bram_rst_o,
+        output reg sel_mux_out_ld_o,
+        output reg sel_mux_out_rst_o,
+        output reg mux_out_reg_wr_en_o,
+        output reg mux_out_reg_rst_o
+        
+                        
     );
     reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
     reg rst_col, ld_col;

@@ -88,7 +88,6 @@ module SA_controller
         output reg [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_o [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1],
         output reg [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_o [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1],
         output reg bram_wr_en_a_o [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
-        output reg bram_wr_en_b_o,
         output reg en_adder_node_o [0 : N_ROWS_ARRAY - 1],
         output reg sel_mux_node_o [0 : N_ROWS_ARRAY - 1],
         output reg bram_rst_o,

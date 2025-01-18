@@ -82,7 +82,7 @@ module sparhixcel_design
 //        input sel_mux_out_ld,
 //        input bram_rst,
         //input bram_wr_en_a,
-        //input bram_wr_en_b,
+        input bram_wr_en_b,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write,
         
@@ -130,7 +130,7 @@ module sparhixcel_design
     wire bram_rst;
     wire bram_wr_en_a[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY];
     wire bram_wr_en_a_first[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
-    wire bram_wr_en_b;
+    //wire bram_wr_en_b;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
@@ -269,9 +269,13 @@ module sparhixcel_design
         .sel_mux_out_1_o(sel_mux_out_1_first),
         .sel_mux_out_2_o(sel_mux_out_2_first),
         .bram_wr_en_a_o(bram_wr_en_a_first),
-        .bram_wr_en_b_o(bram_wr_en_b_o)
         .en_adder_node_o(en_adder_node),
-        .sel_mux_node_o(sel_mux_node)
+        .sel_mux_node_o(sel_mux_node),
+        .bram_rst_o(bram_rst),
+        .sel_mux_out_ld_o(sel_mux_out_ld),
+        .sel_mux_out_rst_o(sel_mux_out_rst),
+        .mux_out_reg_wr_en_o(mux_out_reg_wr_en),
+        .mux_out_reg_rst_o(mux_out_reg_rst)
     );
     
     

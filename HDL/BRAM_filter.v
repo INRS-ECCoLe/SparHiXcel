@@ -38,7 +38,8 @@ module BRAM_filter
     output [DATA_WIDTH - 1 : 0] data_out_b_o 
     );
     
-blk_mem_gen_0 bram (
+blk_mem_gen_0 bram
+(
   .clka(clk_i),    // input wire clka
   .rsta(bram_rst_i),    // input wire rsta
   .ena(1),      // input wire ena

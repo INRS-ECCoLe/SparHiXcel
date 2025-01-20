@@ -73,7 +73,7 @@ module sparhixcel_design
         input clk_i,
         input general_rst_i,
         input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final,
-        
+        input bram_wr_en_b_i [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
 //        input [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_i,
 //        input [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_i,
 //        input mux_out_reg_rst,
@@ -82,10 +82,17 @@ module sparhixcel_design
 //        input sel_mux_out_ld,
 //        input bram_rst,
         //input bram_wr_en_a,
-        input bram_wr_en_b,
+        //input bram_wr_en_b,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write,
-        
+        input [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters_i,
+        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
+        input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
+        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
+        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
+        input input_ready_i, //from DRAM
+        input weight_ready_i,
+        input bram_ready_i,
         
         output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o
         
@@ -130,12 +137,27 @@ module sparhixcel_design
     wire bram_rst;
     wire bram_wr_en_a[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY];
     wire bram_wr_en_a_first[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
+    wire bram_wr_en_b [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY];
+    wire bram_wr_en_a_rst;
+    wire bram_wr_en_a_ld; 
+    wire bram_wr_en_b_rst;
+    wire bram_wr_en_b_ld;
     //wire bram_wr_en_b;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     //wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
+    
+    genvar t;
+    generate 
+        for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
+            assign bram_wr_en_a[t][0] = bram_wr_en_a_first[t];
+            assign bram_wr_en_b[t][0] = bram_wr_en_b_i[t];
+            assign sel_mux_out_1[t][0] = sel_mux_out_1_first [t];
+            assign sel_mux_out_2[t][0] = sel_mux_out_2_first [t];    
+        end
+    endgenerate
     genvar i;
     generate 
         for (i = 0 ; i < N_ROWS_ARRAY ; i = i + 1) begin
@@ -236,14 +258,14 @@ module sparhixcel_design
         .filter_size_i(filter_size_i),
         .clk_i(clk_i),
         .general_rst_i(general_rst_i),
-        .iteration_num_filters_i(),
-        .num_filters_a_round_i(),
-        .total_num_channels_i(),
-        .iteration_num_inputs_i(),
-        .num_input_a_round_i(),
-        .input_ready_i(),
-        .weight_ready_i(),
-        .bram_ready_i(),
+        .iteration_num_filters_i(iteration_num_filters_i),
+        .num_filters_a_round_i(num_filters_a_round_i),
+        .total_num_channels_i(total_num_channels_i),
+        .iteration_num_inputs_i(iteration_num_inputs_i),
+        .num_input_a_round_i(num_input_a_round_i),
+        .input_ready_i(input_ready_i),
+        .weight_ready_i(weight_ready_i),
+        .bram_ready_i(bram_ready_i),
        
         //.end_feature_i(end_feature),
         //.max_round_weight_i(n_round_weight_i),
@@ -275,7 +297,11 @@ module sparhixcel_design
         .sel_mux_out_ld_o(sel_mux_out_ld),
         .sel_mux_out_rst_o(sel_mux_out_rst),
         .mux_out_reg_wr_en_o(mux_out_reg_wr_en),
-        .mux_out_reg_rst_o(mux_out_reg_rst)
+        .mux_out_reg_rst_o(mux_out_reg_rst),
+        .bram_wr_en_a_rst_o(bram_wr_en_a_rst),
+        .bram_wr_en_a_ld_o(bram_wr_en_a_ld), 
+        .bram_wr_en_b_rst_o(bram_wr_en_b_rst),
+        .bram_wr_en_b_ld_o(bram_wr_en_b_ld) 
     );
     
     
@@ -366,11 +392,17 @@ module sparhixcel_design
                         .sel_mux_rst_i(sel_mux_out_rst),
                         .sel_mux_ld_i(sel_mux_out_ld),
                         .bram_rst_i(bram_rst),
-                        .bram_wr_en_a_i(bram_wr_en_a),
-                        .bram_wr_en_b_i(bram_wr_en_b),
+                        .bram_wr_en_a_i(bram_wr_en_a[f][col]),
+                        .bram_wr_en_b_i(bram_wr_en_b[f][col]),
                         .bram_addr_write_read_i(bram_addr_write_read),
                         .bram_addr_read_write_i(bram_addr_read_write),
-                    
+                        .bram_wr_en_a_rst_i(bram_wr_en_a_rst),
+                        .bram_wr_en_a_ld_i(bram_wr_en_a_ld), 
+                        .bram_wr_en_b_rst_i(bram_wr_en_b_rst),
+                        .bram_wr_en_b_ld_i(bram_wr_en_b_ld), 
+    
+                        .bram_wr_en_a_o(bram_wr_en_a[f][col+1]),
+                        .bram_wr_en_b_o(bram_wr_en_b[f][col+1]),
                         .sel_mux_out_1_o(sel_mux_out_1[f][col + 1]),
                         .sel_mux_out_2_o(sel_mux_out_2[f][col + 1]),
                         .d_out_o(out_filter[f*N_COLS_ARRAY + col])

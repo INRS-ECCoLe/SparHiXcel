@@ -21,49 +21,61 @@
 
 
 module dram_to_memory
+    #(
+    parameter DATA_IN_BITWIDTH = 8,
+    parameter DATA_OUT_BITWIDTH = 163
+    )
     (
-    input clk,                   // Clock signal
-    input rst,                   // Reset signal
-    input [7:0] data_in,         // 8-bit input data
-    input data_valid,            // Signal indicating valid input data
-    output reg [162:0] bram_data, // 163-bit accumulated data
-    output reg bram_write_enable, // BRAM write enable signal
-    output reg [7:0] bram_addr   // BRAM address
+    input clk_i,                   // Clock signal
+    input dram_to_mem_rst_i,                   // Reset signal
+    input [DATA_IN_BITWIDTH - 1 :0] data_in_i,         // 8-bit input data
+    input data_valid_i,            // Signal indicating valid input data
+    output reg [DATA_OUT_BITWIDTH -1 : 0] data_out_o, // 163-bit accumulated data
+    output reg memory_write_enable, // BRAM write enable signal
     );
-    reg [162:0] accumulated_data; // Register to store accumulated 163 bits
-    reg [7:0] bit_count;          // Counter for the number of bits accumulated
-    reg [7:0] carry_over_bits;    // Register to hold any leftover bits from previous rounds
-
-    always @(posedge clk or posedge rst) begin
-        if (rst) begin
-            accumulated_data <= 163'b0;  // Reset accumulated data
-            bit_count <= 8'b0;           // Reset bit count
-            carry_over_bits <= 8'b0;     // Reset carry-over bits
+    reg [DATA_OUT_BITWIDTH - 1 : 0] accumulated_data; // Register to store accumulated DATA_OUT_BITWIDTH bits
+    reg [$clog2(DATA_OUT_BITWIDTH) -1 : 0] bit_count;          // Counter for the number of bits accumulated
+    reg [DATA_IN_BITWIDTH - 1 : 0] carry_over_bits;    // Register to hold any leftover bits from previous rounds
+    reg carry_flag;
+    reg [DATA_IN_BITWIDTH - 1 : 0] carry_over_number_bits;
+    always @(posedge clk_i or posedge dram_to_mem_rst_i) begin
+        if (dram_to_mem_rst_i) begin
+            accumulated_data <= {DATA_OUT_BITWIDTH{1'b0}};  // Reset accumulated data
+            bit_count <= {$clog2(DATA_OUT_BITWIDTH){1'b0}};           // Reset bit count
+            carry_over_bits <= {DATA_IN_BITWIDTH{1'b0}};     // Reset carry-over bits
             bram_write_enable <= 0;      // Disable BRAM write
+            carry_flag <= 0;
+            carry_over_number_bits <= 0;
         end else if (data_valid) begin
-            // Accumulate the new data, handling any carry-over bits from the previous round
-            if (bit_count + 8 <= 163) begin
-                // Just shift in the new 8-bit data without carry over
-                accumulated_data <= {accumulated_data[154:0], data_in};
-                bit_count <= bit_count + 8;
+
+            if ((bit_count == 0) && carry_flag == 1 )begin
+                accumulated_data <= {accumulated_data[DATA_OUT_BITWIDTH - carry_over_number_bits - 1:0], carry_over_bits [carry_over_number_bits - 1 : 0]};
+                bit_count <= bit_count + carry_over_number_bits;
+                carry_flag <= 0;
+                carry_over_bits <= {DATA_IN_BITWIDTH{1'b0}};
+            end else if (bit_count + DATA_IN_BITWIDTH < DATA_OUT_BITWIDTH) begin
+ 
+                accumulated_data <= {accumulated_data[DATA_OUT_BITWIDTH - 1 - DATA_IN_BITWIDTH :0], data_in};
+                bit_count <= bit_count + DATA_IN_BITWIDTH ;
             end else begin
-                // Handle leftover bits from previous round
-                if (bit_count < 163) begin
-                    // Shift in the remaining bits
-                    accumulated_data <= {accumulated_data[154:0], data_in[7:0]};
-                    carry_over_bits <= data_in[7:0];  // Store remaining bits
-                    bit_count <= bit_count + 8;
+                
+                if (bit_count < DATA_OUT_BITWIDTH) begin
+                   
+                    accumulated_data <= {accumulated_data[bit_count : 0], data_in[DATA_IN_BITWIDTH -1 : DATA_IN_BITWIDTH - (DATA_OUT_BITWIDTH - bit_count - 1)]};
+                    carry_over_bits [DATA_IN_BITWIDTH - (DATA_OUT_BITWIDTH - bit_count - 1) - 1 : 0] <= data_in[DATA_IN_BITWIDTH - (DATA_OUT_BITWIDTH - bit_count - 1) - 1 : 0];  // Store remaining bits
+                    carry_over_number_bits <= DATA_IN_BITWIDTH- (DATA_OUT_BITWIDTH - bit_count - 1);
+                    bit_count <= bit_count + DATA_OUT_BITWIDTH - bit_count - 1;
+                    carry_flag <= 1;
                 end
             end
             
-            // If 163 bits are accumulated, store them to BRAM
-            if (bit_count >= 163) begin
-                bram_data <= accumulated_data;    // Store accumulated data
-                bram_write_enable <= 1;           // Enable BRAM write
+            // If DATA_OUT_BITWIDTH bits are accumulated, store them to BRAM
+            if (bit_count >= DATA_OUT_BITWIDTH) begin
+                data_out_o <= accumulated_data;    // Store accumulated data
+                memory_write_enable <= 1;           // Enable BRAM write
                 bit_count <= 0;                   // Reset bit count
-                carry_over_bits <= 8'b0;          // Reset carry-over bits
             end else begin
-                bram_write_enable <= 0;           // No write to BRAM yet
+                memory_write_enable <= 0;           // No write to BRAM yet
             end
         end
     end

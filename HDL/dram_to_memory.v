@@ -24,6 +24,7 @@ module dram_to_memory
     #(
     parameter DATA_IN_BITWIDTH = 8,
     parameter DATA_OUT_BITWIDTH = 163
+
     )
     (
     input clk_i,                   // Clock signal
@@ -31,45 +32,33 @@ module dram_to_memory
     input [DATA_IN_BITWIDTH - 1 :0] data_in_i,         // DATA_IN_BITWIDTH-bit input data
     input data_valid_i,            // Signal indicating valid input data
     output reg [DATA_OUT_BITWIDTH -1 : 0] data_out_o, // DATA_OUT_BITWIDTH-bit accumulated data
-    output reg memory_write_enable, // BRAM write enable signal
+    output reg memory_write_enable // BRAM write enable signal
     );
-    reg [DATA_OUT_BITWIDTH - 1 : 0] accumulated_data; // Register to store accumulated DATA_OUT_BITWIDTH bits
-    reg [$clog2(DATA_OUT_BITWIDTH) -1 : 0] bit_count;          // Counter for the number of bits accumulated
-    reg [DATA_IN_BITWIDTH - 1 : 0] carry_over_bits;    // Register to hold any leftover bits from previous rounds
-    reg carry_flag;
-    reg [DATA_IN_BITWIDTH - 1 : 0] carry_over_number_bits;
+    localparam DIV_CEILING = (DATA_IN_BITWIDTH + DATA_OUT_BITWIDTH - 1) / DATA_IN_BITWIDTH;
+    localparam DATA_ACCU_BITWIDTH = DATA_IN_BITWIDTH * DIV_CEILING;
+    reg [DATA_ACCU_BITWIDTH - 1 : 0] accumulated_data; // Register to store accumulated DATA_OUT_BITWIDTH bits
+    reg [$clog2(DATA_ACCU_BITWIDTH) -1 : 0] bit_count;          // Counter for the number of bits accumulated
+
+
+
     always @(posedge clk_i or posedge dram_to_mem_rst_i) begin
         if (dram_to_mem_rst_i) begin
-            accumulated_data <= {DATA_OUT_BITWIDTH{1'b0}};  // Reset accumulated data
-            bit_count <= {$clog2(DATA_OUT_BITWIDTH){1'b0}};           // Reset bit count
-            carry_over_bits <= {DATA_IN_BITWIDTH{1'b0}};     // Reset carry-over bits
+            accumulated_data <= {DATA_ACCU_BITWIDTH{1'b0}};  // Reset accumulated data
+            bit_count <= {$clog2(DATA_ACCU_BITWIDTH){1'b0}};           // Reset bit count
             memory_write_enable <= 0;      // Disable BRAM write
-            carry_flag <= 0;
-            carry_over_number_bits <= {DATA_IN_BITWIDTH{1'b0}};
         end else if (data_valid_i) begin
 
-            if (bit_count + DATA_IN_BITWIDTH + carry_over_number_bits < DATA_OUT_BITWIDTH)begin
+            if (bit_count < DATA_ACCU_BITWIDTH - 1)begin
             
-                accumulated_data <= {accumulated_data[DATA_OUT_BITWIDTH - carry_over_number_bits - DATA_IN_BITWIDTH - 1:0], carry_over_bits [carry_over_number_bits - 1 : 0], data_in_i};
-                bit_count <= bit_count + DATA_IN_BITWIDTH + carry_over_number_bits;
-                carry_flag <= 0;
-                carry_over_number_bits <= {DATA_IN_BITWIDTH{1'b0}};  
-                carry_over_bits <= {DATA_IN_BITWIDTH{1'b0}};
-                
-            end else if (bit_count < DATA_OUT_BITWIDTH) begin
-            
-                accumulated_data <= {accumulated_data[bit_count : 0], data_in[DATA_IN_BITWIDTH -1 : DATA_IN_BITWIDTH - (DATA_OUT_BITWIDTH - bit_count - 1)]};
-                carry_over_bits [DATA_IN_BITWIDTH - (DATA_OUT_BITWIDTH - bit_count - 1) - 1 : 0] <= data_in_i[DATA_IN_BITWIDTH - (DATA_OUT_BITWIDTH - bit_count - 1) - 1 : 0];  // Store remaining bits
-                carry_over_number_bits <= DATA_IN_BITWIDTH- (DATA_OUT_BITWIDTH - bit_count - 1);
-                bit_count <= bit_count + DATA_OUT_BITWIDTH - bit_count - 1;
-                carry_flag <= 1;
-            
+                accumulated_data <= {accumulated_data[DATA_ACCU_BITWIDTH - DATA_IN_BITWIDTH - 1 : 0], data_in_i};
+                bit_count <= bit_count + DATA_IN_BITWIDTH;
+          
             end
             
             // If DATA_OUT_BITWIDTH bits are accumulated, store them to BRAM
             if (bit_count >= DATA_OUT_BITWIDTH) begin
             
-                data_out_o <= accumulated_data;    // Store accumulated data
+                data_out_o <= accumulated_data[DATA_ACCU_BITWIDTH - 1 : DATA_ACCU_BITWIDTH - DATA_OUT_BITWIDTH];    // Store accumulated data
                 memory_write_enable <= 1;           // Enable BRAM write
                 bit_count <= 0;                   // Reset bit count
                 

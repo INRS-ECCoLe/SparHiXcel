@@ -38,6 +38,7 @@ localparam SEL_WIDTH_MUX_OUT_1 = $clog2(NUMBER_INPUT_MUX_OUT_1);
 localparam SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1);
 localparam BRAM_ADDR_WIDTH = 11;   
 localparam DATA_IN_DRAM_WIDTH = 32;
+localparam DRAM_ADDR_WIDTH = 18;
         
 localparam ADDRS_WIDTH = $clog2(N);
 localparam SEL_WIDTH = $clog2(N);
@@ -51,7 +52,7 @@ localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
 localparam INPUT_FEATURE_ADDR_WIDTH = 16;
-
+localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
 
 
 module sparhixcel_design
@@ -60,7 +61,7 @@ module sparhixcel_design
     )
     (
         //input [$clog2(N_COLS_ARRAY) - 1 : 0 ] select_output_i,
-        input [$clog2(N+1)-1 : 0]filter_size_i,
+//        input [$clog2(N+1)-1 : 0]filter_size_i,
         //input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
         //input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] end_addr_in_feature_i,
         input [DATA_IN_DRAM_WIDTH - 1 : 0] mem_data_i,
@@ -87,11 +88,11 @@ module sparhixcel_design
         //input bram_wr_en_b,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write,
-        input [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters_i,
-        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
-        input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
-        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
-        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
+//        input [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters_i,
+//        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
+//        input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
+//        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
+//        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
         input input_ready_i, //from DRAM
         input weight_ready_i,
         input bram_ready_i,
@@ -157,7 +158,8 @@ module sparhixcel_design
     wire wr_rom_signals_ld;
     wire wr_mem_ld;
     wire wr_mem2_ld;
-    
+    wire wr_parameters_ld;
+    reg [PARAMETERS_WIDTH -1 : 0] data_parameters;
     genvar t;
     generate 
         for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
@@ -259,19 +261,23 @@ module sparhixcel_design
         .MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER),
         .BRAM_ADDR_WIDTH(BRAM_ADDR_WIDTH),
         .SEL_WIDTH_MUX_OUT_1(SEL_WIDTH_MUX_OUT_1),
-        .SEL_WIDTH_MUX_OUT_2(SEL_WIDTH_MUX_OUT_2)
+        .SEL_WIDTH_MUX_OUT_2(SEL_WIDTH_MUX_OUT_2),
+        .DRAM_ADDR_WIDTH(DRAM_ADDR_WIDTH),
+        .PARAMETERS_WIDTH(PARAMETERS_WIDTH)
     )
     control_block
     (
         .rom_signals_data_i(rom_signals_data),
-        .filter_size_i(filter_size_i),
+        .parameters_data_i(data_parameters),
+        .wr_parameters_ld_i(wr_parameters_ld),
+//        .filter_size_i(filter_size_i),
         .clk_i(clk_i),
         .general_rst_i(general_rst_i),
-        .iteration_num_filters_i(iteration_num_filters_i),
-        .num_filters_a_round_i(num_filters_a_round_i),
-        .total_num_channels_i(total_num_channels_i),
-        .iteration_num_inputs_i(iteration_num_inputs_i),
-        .num_input_a_round_i(num_input_a_round_i),
+//        .iteration_num_filters_i(iteration_num_filters_i),
+//        .num_filters_a_round_i(num_filters_a_round_i),
+//        .total_num_channels_i(total_num_channels_i),
+//        .iteration_num_inputs_i(iteration_num_inputs_i),
+//        .num_input_a_round_i(num_input_a_round_i),
         .input_ready_i(input_ready_i),
         .weight_ready_i(weight_ready_i),
         .bram_ready_i(bram_ready_i),
@@ -526,5 +532,21 @@ module sparhixcel_design
     always @(*) begin
         final_output_o = out_filter[sel_mux_final];  
     end
-    
+   
+   
+    dram_to_memory
+    #(
+        .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
+        .DATA_OUT_BITWIDTH(N_ROWS_ARRAY * F_WIDTH)
+
+    )
+    dram_to_parameters
+    (
+        .clk_i(clk_i),                   
+        .dram_to_mem_rst_i(),                   
+        .data_in_i(mem_data_i),         
+        .data_valid_i(),            
+        .data_out_o(data_parameters), 
+        .memory_write_enable(wr_parameters_ld) 
+    );
 endmodule

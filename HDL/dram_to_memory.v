@@ -71,7 +71,7 @@ module dram_to_memory
                 data_out_o <= data_in_i[DATA_IN_BITWIDTH - 1 : DATA_IN_BITWIDTH - DATA_OUT_BITWIDTH];
                 memory_write_enable <= 1;
             end    
-        end
+        end 
     end
 endmodule
 

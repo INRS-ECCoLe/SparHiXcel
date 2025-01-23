@@ -27,6 +27,7 @@ localparam LEN_TRANSFER = 15;
 localparam MAX_LEN_TRANSFER = 15;
 localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
 
+localparam INPUT_A_ROUND_WIDTH = 5;
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 10;
 localparam MAX_TOTAL_CHANNEL_NUM = 50;
 localparam MAX_ITERATION_FILTER_NUM = 10;
@@ -42,13 +43,13 @@ localparam SEL_WIDTH = $clog2(N);
 localparam NUM_COL_WIDTH = $clog2(N+1);
 
 localparam ROM_SIG_WIDTH = (SEL_WIDTH + NUM_COL_WIDTH + SEL_MUX_TR_WIDTH + 1)*N_ROWS_ARRAY + ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)*(SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2 + 1) ;
-localparam SIG_ADDRS_WIDTH = 18;   
+localparam SIG_ADDRS_WIDTH = 16;   
         
 localparam LOAD_COUNTER_WIDTH = 5;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
-localparam INPUT_FEATURE_ADDR_WIDTH = 2**16;
+localparam INPUT_FEATURE_ADDR_WIDTH = 16;
 
 
 
@@ -62,12 +63,12 @@ module sparhixcel_design
         //input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
         //input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] end_addr_in_feature_i,
         input [N_ROWS_ARRAY * I_WIDTH - 1 : 0] mem_data_i,
-        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem_i,
+        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] wr_addrs_mem_i,
         input wr_mem_ld_i,
         input [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem2_data_i,
-        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem2_i,
+        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem2_i,
         input wr_mem2_ld_i,
-        input [$clog2(SIG_ADDRS_WIDTH) - 1 : 0] wr_addrs_rom_signal_i,
+        input [(SIG_ADDRS_WIDTH) - 1 : 0] wr_addrs_rom_signal_i,
         input wr_rom_signals_ld_i,
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
@@ -89,7 +90,7 @@ module sparhixcel_design
         input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
         input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
         input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
-        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
+        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
         input input_ready_i, //from DRAM
         input weight_ready_i,
         input bram_ready_i,
@@ -106,7 +107,7 @@ module sparhixcel_design
     wire rd_weight_rst;
     wire rd_feature_ld;
     wire rd_rom_signals_ld;
-    wire [$clog2(SIG_ADDRS_WIDTH) - 1 : 0]addrs_rom_signal;
+    wire [(SIG_ADDRS_WIDTH) - 1 : 0]addrs_rom_signal;
     wire [ROM_SIG_WIDTH - 1 : 0] rom_signals_data;
     wire [SEL_WIDTH - 1: 0] f_sel [0 : N_ROWS_ARRAY - 1];
     wire [NUM_COL_WIDTH -1 : 0]row_num [0 : N_ROWS_ARRAY - 1];
@@ -119,7 +120,7 @@ module sparhixcel_design
     wire signed [I_WIDTH - 1: 0] in_feature_array [0 : N_ROWS_ARRAY - 1];
     wire [F_WIDTH * N_ROWS_ARRAY - 1: 0] f_weight_mem;
     wire signed [F_WIDTH - 1: 0] f_weight_array [0 : N_ROWS_ARRAY - 1];
-    wire [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
+    wire [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
     //reg end_feature;
     wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1][0 : N_COLS_ARRAY];
@@ -238,12 +239,12 @@ module sparhixcel_design
         .SEL_WIDTH(SEL_WIDTH),
         .NUM_COL_WIDTH(NUM_COL_WIDTH),
         .ROM_SIG_WIDTH(ROM_SIG_WIDTH),
-        .SIG_ADDRS_WIDTH($clog2(SIG_ADDRS_WIDTH)),
+        .SIG_ADDRS_WIDTH((SIG_ADDRS_WIDTH)),
         .LOAD_COUNTER_WIDTH(LOAD_COUNTER_WIDTH),
         .READY_COUNTER_WIDTH(READY_COUNTER_WIDTH),
         .WAITING_OP_COUNTER_WIDTH(WAITING_OP_COUNTER_WIDTH),
         //.COUNTER_ROUND_WIDTH(COUNTER_ROUND_WIDTH),
-        .INPUT_FEATURE_ADDR_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH)),
+        .INPUT_FEATURE_ADDR_WIDTH((INPUT_FEATURE_ADDR_WIDTH)),
         .MAX_ITERATION_FILTER_NUM(MAX_ITERATION_FILTER_NUM),
         .NUMBER_SUPPORTED_FILTERS(NUMBER_SUPPORTED_FILTERS),
         .MAX_TOTAL_CHANNEL_NUM(MAX_TOTAL_CHANNEL_NUM),
@@ -304,8 +305,40 @@ module sparhixcel_design
         .bram_wr_en_b_ld_o(bram_wr_en_b_ld) 
     );
     
-    
-    
+    simple_dual_port_ram 
+    #(
+        .MEMORY_WIDTH(ROM_SIG_WIDTH),
+        .ADDRS_WIDTH(SIG_ADDRS_WIDTH)
+    )
+    signal_mem
+    (
+        .clk_i(clk_i),
+        .ena_i(1),
+        .enb_i(rd_rom_signals_ld),
+        .wea_i(wr_rom_signals_ld_i),
+        .addra_i(wr_addrs_rom_signal_i),
+        .addrb_i(addrs_rom_signal),
+        .dia_i(rom_signals_data_i),
+        .dob_o(rom_signals_data)
+    );
+        
+    simple_dual_port_ram 
+    #(
+        .MEMORY_WIDTH(N_ROWS_ARRAY * I_WIDTH),
+        .ADDRS_WIDTH(INPUT_FEATURE_ADDR_WIDTH)
+    )
+    in_feature_memory
+    (
+        .clk_i(clk_i),
+        .ena_i(1),
+        .enb_i(rd_feature_ld),
+        .wea_i(wr_mem_ld_i),
+        .addra_i(wr_addrs_mem_i),
+        .addrb_i(in_feature_addr),
+        .dia_i(mem_data_i),
+        .dob_o(in_feature_mem)
+    );
+    /*
     rom_signals
     #(
         .MEMORY_WIDTH(ROM_SIG_WIDTH),
@@ -338,7 +371,7 @@ module sparhixcel_design
         .wr_mem_ld_i(wr_mem_ld_i),
         .mem_data_o(in_feature_mem)
     );  
-    
+    */
       
     /*
     always @(*) begin
@@ -347,7 +380,7 @@ module sparhixcel_design
     end
     */
     
-    
+    /*
     rom_memory2
     #(
         .MEMORY_WIDTH(N_ROWS_ARRAY * F_WIDTH),
@@ -364,7 +397,23 @@ module sparhixcel_design
         .mem_data_o(f_weight_mem)
     );    
     
-    
+        */
+    simple_dual_port_ram 
+    #(
+        .MEMORY_WIDTH(N_ROWS_ARRAY * F_WIDTH),
+        .ADDRS_WIDTH(SIG_ADDRS_WIDTH)
+    )
+    weight_memory
+    (
+        .clk_i(clk_i),
+        .ena_i(1),
+        .enb_i(rd_weight_ld),
+        .wea_i(wr_mem2_ld_i),
+        .addra_i(wr_addrs_mem2_i),
+        .addrb_i(addrs_rom_signal),
+        .dia_i(mem2_data_i),
+        .dob_o(f_weight_mem)
+    );
     genvar f,col;
     generate
         for(f = 0; f < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1)/ N_COLS_ARRAY ; f = f + 1) begin

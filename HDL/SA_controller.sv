@@ -41,8 +41,8 @@ module SA_controller
         parameter READY_COUNTER_WIDTH = 2,
         parameter WAITING_OP_COUNTER_WIDTH = 4,
         //parameter COUNTER_ROUND_WIDTH = 3,
-        parameter INPUT_FEATURE_ADDR_WIDTH = 2**16,
-        
+        parameter INPUT_FEATURE_ADDR_WIDTH = 16,
+        parameter INPUT_A_ROUND_WIDTH = 5,
         parameter MAX_ITERATION_FILTER_NUM = 10,
         parameter NUMBER_SUPPORTED_FILTERS = 30,
         parameter MAX_TOTAL_CHANNEL_NUM = 50,
@@ -64,7 +64,7 @@ module SA_controller
         input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
         //input [$clog2(MAX_TOTAL_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] total_num_inputs_i,
         input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
-        input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
+        input [(INPUT_A_ROUND_WIDTH) - 1 : 0] num_input_a_round_i,
         input input_ready_i, //from DRAM
         input weight_ready_i,
         input bram_ready_i,
@@ -145,7 +145,7 @@ module SA_controller
     reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs;
     wire iteration_num_inputs_rst;
     wire iteration_num_inputs_ld;
-    reg [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] number_input_a_round;
+    reg [(INPUT_A_ROUND_WIDTH) - 1 : 0] number_input_a_round;
     wire number_input_a_round_rst;
     wire number_input_a_round_ld;
     reg [$clog2(N+1)-1 : 0]filter_size;
@@ -625,7 +625,7 @@ module SA_controller
         
         if (number_input_a_round_rst) begin
        
-            number_input_a_round <= {$clog2(INPUT_FEATURE_ADDR_WIDTH){1'b0}};
+            number_input_a_round <= {(INPUT_A_ROUND_WIDTH){1'b0}};
                    
         end else if (number_input_a_round_ld) begin
             
@@ -838,7 +838,7 @@ module SA_controller
      //counter for count_input_a_round.
     counter
     #(
-        .COUNTER_WIDTH($clog2(INPUT_FEATURE_ADDR_WIDTH))    
+        .COUNTER_WIDTH(INPUT_A_ROUND_WIDTH)    
     )
     count_input
     (

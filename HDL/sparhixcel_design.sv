@@ -37,6 +37,7 @@ localparam NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_
 localparam SEL_WIDTH_MUX_OUT_1 = $clog2(NUMBER_INPUT_MUX_OUT_1);    
 localparam SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1);
 localparam BRAM_ADDR_WIDTH = 11;   
+localparam DATA_IN_DRAM_WIDTH = 32;
         
 localparam ADDRS_WIDTH = $clog2(N);
 localparam SEL_WIDTH = $clog2(N);
@@ -58,19 +59,19 @@ module sparhixcel_design
     
     )
     (
-        input [$clog2(N_COLS_ARRAY) - 1 : 0 ] select_output_i,
+        //input [$clog2(N_COLS_ARRAY) - 1 : 0 ] select_output_i,
         input [$clog2(N+1)-1 : 0]filter_size_i,
         //input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
         //input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] end_addr_in_feature_i,
-        input [N_ROWS_ARRAY * I_WIDTH - 1 : 0] mem_data_i,
+        input [DATA_IN_DRAM_WIDTH - 1 : 0] mem_data_i,
         input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] wr_addrs_mem_i,
-        input wr_mem_ld_i,
-        input [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem2_data_i,
+        //input wr_mem_ld_i,
+        //input [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem2_data_i,
         input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem2_i,
-        input wr_mem2_ld_i,
+        //input wr_mem2_ld_i,
         input [(SIG_ADDRS_WIDTH) - 1 : 0] wr_addrs_rom_signal_i,
-        input wr_rom_signals_ld_i,
-        input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
+        //input wr_rom_signals_ld_i,
+        //input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
         input general_rst_i,
         input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final,
@@ -149,6 +150,13 @@ module sparhixcel_design
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     //wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
+    
+    wire [N_ROWS_ARRAY * I_WIDTH - 1 : 0] mem_data_input;
+    wire [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem_data_weight;
+    wire [ROM_SIG_WIDTH - 1 : 0] mem_data_signal;
+    wire wr_rom_signals_ld;
+    wire wr_mem_ld;
+    wire wr_mem2_ld;
     
     genvar t;
     generate 
@@ -305,6 +313,25 @@ module sparhixcel_design
         .bram_wr_en_b_ld_o(bram_wr_en_b_ld) 
     );
     
+    dram_to_memory
+    #(
+        .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
+        .DATA_OUT_BITWIDTH(ROM_SIG_WIDTH)
+
+    )
+    dram_to_mem_signal
+    (
+        .clk_i(clk_i),                   
+        .dram_to_mem_rst_i(),                   
+        .data_in_i(mem_data_i),         
+        .data_valid_i(),            
+        .data_out_o(mem_data_signal), 
+        .memory_write_enable(wr_rom_signals_ld) 
+    );
+    
+    
+    
+    
     simple_dual_port_ram 
     #(
         .MEMORY_WIDTH(ROM_SIG_WIDTH),
@@ -315,12 +342,29 @@ module sparhixcel_design
         .clk_i(clk_i),
         .ena_i(1),
         .enb_i(rd_rom_signals_ld),
-        .wea_i(wr_rom_signals_ld_i),
+        .wea_i(wr_rom_signals_ld),
         .addra_i(wr_addrs_rom_signal_i),
         .addrb_i(addrs_rom_signal),
-        .dia_i(rom_signals_data_i),
+        .dia_i(mem_data_signal),
         .dob_o(rom_signals_data)
     );
+     
+     
+    dram_to_memory
+    #(
+        .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
+        .DATA_OUT_BITWIDTH(N_ROWS_ARRAY * I_WIDTH)
+
+    )
+    dram_to_mem_input
+    (
+        .clk_i(clk_i),                   
+        .dram_to_mem_rst_i(),                   
+        .data_in_i(mem_data_i),         
+        .data_valid_i(),            
+        .data_out_o(mem_data_input), 
+        .memory_write_enable(wr_mem_ld) 
+    ); 
         
     simple_dual_port_ram 
     #(
@@ -332,10 +376,10 @@ module sparhixcel_design
         .clk_i(clk_i),
         .ena_i(1),
         .enb_i(rd_feature_ld),
-        .wea_i(wr_mem_ld_i),
+        .wea_i(wr_mem_ld),
         .addra_i(wr_addrs_mem_i),
         .addrb_i(in_feature_addr),
-        .dia_i(mem_data_i),
+        .dia_i(mem_data_input),
         .dob_o(in_feature_mem)
     );
     /*
@@ -398,6 +442,22 @@ module sparhixcel_design
     );    
     
         */
+    dram_to_memory
+    #(
+        .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
+        .DATA_OUT_BITWIDTH(N_ROWS_ARRAY * F_WIDTH)
+
+    )
+    dram_to_mem_weight
+    (
+        .clk_i(clk_i),                   
+        .dram_to_mem_rst_i(),                   
+        .data_in_i(mem_data_i),         
+        .data_valid_i(),            
+        .data_out_o(mem_data_weight), 
+        .memory_write_enable(wr_mem2_ld) 
+    );
+    
     simple_dual_port_ram 
     #(
         .MEMORY_WIDTH(N_ROWS_ARRAY * F_WIDTH),
@@ -408,10 +468,10 @@ module sparhixcel_design
         .clk_i(clk_i),
         .ena_i(1),
         .enb_i(rd_weight_ld),
-        .wea_i(wr_mem2_ld_i),
+        .wea_i(wr_mem2_ld),
         .addra_i(wr_addrs_mem2_i),
         .addrb_i(addrs_rom_signal),
-        .dia_i(mem2_data_i),
+        .dia_i(mem_data_weight),
         .dob_o(f_weight_mem)
     );
     genvar f,col;

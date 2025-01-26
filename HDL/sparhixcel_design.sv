@@ -152,6 +152,13 @@ module sparhixcel_design
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     //wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
     
+    wire [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram;
+    wire [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram;
+    wire [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram;
+    wire [DRAM_ADDR_WIDTH - 1 : 0] weight_finish_addr_dram;
+    wire [DRAM_ADDR_WIDTH - 1 : 0] signal_start_addr_dram;
+    wire [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram;
+    
     wire [N_ROWS_ARRAY * I_WIDTH - 1 : 0] mem_data_input;
     wire [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem_data_weight;
     wire [ROM_SIG_WIDTH - 1 : 0] mem_data_signal;
@@ -316,7 +323,13 @@ module sparhixcel_design
         .bram_wr_en_a_rst_o(bram_wr_en_a_rst),
         .bram_wr_en_a_ld_o(bram_wr_en_a_ld), 
         .bram_wr_en_b_rst_o(bram_wr_en_b_rst),
-        .bram_wr_en_b_ld_o(bram_wr_en_b_ld) 
+        .bram_wr_en_b_ld_o(bram_wr_en_b_ld),
+        .input_start_addr_dram_o(input_start_addr_dram),
+        .input_finish_addr_dram_o(input_finish_addr_dram),
+        .weight_start_addr_dram_o(weight_start_addr_dram),
+        .weight_finish_addr_dram_o(weight_finish_addr_dram),
+        .signal_start_addr_dram_o(signal_start_addr_dram),
+        .signal_finish_addr_dram_o(signal_finish_addr_dram) 
     );
     
     dram_to_memory

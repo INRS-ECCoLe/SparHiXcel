@@ -102,7 +102,13 @@ module SA_controller
         output reg bram_wr_en_a_rst_o,
         output reg bram_wr_en_a_ld_o, 
         output reg bram_wr_en_b_rst_o,
-        output reg bram_wr_en_b_ld_o 
+        output reg bram_wr_en_b_ld_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] weight_finish_addr_dram_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] signal_start_addr_dram_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram_o 
                         
     );
     reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
@@ -137,24 +143,24 @@ module SA_controller
     wire num_channel_rst;
     reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_channel;
     reg increment_done_ch;   
-    reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters;
-    wire iteration_num_filters_rst;
-    wire iteration_num_filters_ld;
-    reg [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round;
-    wire num_filters_a_round_rst;
-    wire num_filters_a_round_ld;
-    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels;
-    wire total_num_channels_rst;
-    wire total_num_channels_ld;
+    reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters; // number of iterations for covering all filters, for example: iteration_num_filters=3 that means the first iteration we cover like 25 filters , next iteration 27 filters, and the last we cover 23 filters and thus all 75 filters are finished
+//    wire iteration_num_filters_rst;
+//    wire iteration_num_filters_ld;
+    reg [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round; // number of filters that is covered in this round for example the first round we cover 25 filters from 75 filters in which this layer has.
+//    wire num_filters_a_round_rst;
+//    wire num_filters_a_round_ld;
+    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels; 
+//    wire total_num_channels_rst;
+//    wire total_num_channels_ld;
     reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs;
-    wire iteration_num_inputs_rst;
-    wire iteration_num_inputs_ld;
+//    wire iteration_num_inputs_rst;
+//    wire iteration_num_inputs_ld;
     reg [(INPUT_A_ROUND_WIDTH) - 1 : 0] number_input_a_round;
-    wire number_input_a_round_rst;
-    wire number_input_a_round_ld;
+    //wire number_input_a_round_rst;
+    //wire number_input_a_round_ld;
     reg [$clog2(N+1)-1 : 0]filter_size;
-    wire filter_size_rst;
-    wire filter_size_ld;
+    //wire filter_size_rst;
+    //wire filter_size_ld;
     reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] count_round_input;
     reg increment_done_round_input;
     wire count_round_input_rst;
@@ -170,12 +176,7 @@ module SA_controller
     wire bram_wr_en_a [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
     wire bram_wr_en_b;  
     
-    wire [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram;
-    wire [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram;
-    wire [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram;
-    wire [DRAM_ADDR_WIDTH - 1 : 0] weight_finish_addr_dram;
-    wire [DRAM_ADDR_WIDTH - 1 : 0] signal_start_addr_dram;
-    wire [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram;
+
     
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
@@ -473,12 +474,12 @@ module SA_controller
         assign total_num_channels = parameters_data_i [$clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)]; 
         assign iteration_num_inputs = parameters_data_i [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
         assign number_input_a_round = parameters_data_i [(INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
-        assign input_start_addr_dram = parameters_data_i [DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)] ;
-        assign input_finish_addr_dram = parameters_data_i [2*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)] ;
-        assign weight_start_addr_dram = parameters_data_i [3*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 2*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
-        assign weight_finish_addr_dram = parameters_data_i [4*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 3*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
-        assign signal_start_addr_dram = parameters_data_i [5*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 4*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
-        assign signal_finish_addr_dram = parameters_data_i [6*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 5*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
+        assign input_start_addr_dram_o = parameters_data_i [DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)] ;
+        assign input_finish_addr_dram_o = parameters_data_i [2*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)] ;
+        assign weight_start_addr_dram_o = parameters_data_i [3*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 2*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
+        assign weight_finish_addr_dram_o = parameters_data_i [4*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 3*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
+        assign signal_start_addr_dram_o = parameters_data_i [5*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 4*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
+        assign signal_finish_addr_dram_o = parameters_data_i [6*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1) - 1 : 5*DRAM_ADDR_WIDTH + (INPUT_A_ROUND_WIDTH) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ $clog2(MAX_TOTAL_CHANNEL_NUM)+ $clog2(NUMBER_SUPPORTED_FILTERS) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(N+1)];
     endgenerate
 
 

@@ -108,8 +108,8 @@ module SA_controller
         output [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] weight_finish_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] signal_start_addr_dram_o,
-        output [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram_o 
-                        
+        output [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram_o, 
+        output [3:0] sa_state_o               
     );
     reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
     reg rst_col, ld_col;
@@ -184,7 +184,7 @@ module SA_controller
         store = 4'b0110 , next_channels = 4'b0111 , next_filters = 4'b1000 ,
         next_input = 4'b1001, wait_bram = 4'b1010;
     reg [3:0] p_state, n_state;
-
+    assign sa_state_o = p_state; 
     always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: state_transition
         case(p_state)
             reset:

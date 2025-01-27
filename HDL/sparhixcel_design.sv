@@ -53,7 +53,7 @@ localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
 localparam INPUT_FEATURE_ADDR_WIDTH = 16;
 localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
-
+localparam MAX_LOAD_TIME_MEM_WIDTH = 4; //how many cycles needed to load one row of input, weight, signal and parameter memories 
 
 module sparhixcel_design
     #(
@@ -167,6 +167,7 @@ module sparhixcel_design
     wire wr_mem2_ld;
     wire wr_parameters_ld;
     reg [PARAMETERS_WIDTH -1 : 0] data_parameters;
+    wire [3:0]sa_state;
     genvar t;
     generate 
         for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
@@ -329,7 +330,8 @@ module sparhixcel_design
         .weight_start_addr_dram_o(weight_start_addr_dram),
         .weight_finish_addr_dram_o(weight_finish_addr_dram),
         .signal_start_addr_dram_o(signal_start_addr_dram),
-        .signal_finish_addr_dram_o(signal_finish_addr_dram) 
+        .signal_finish_addr_dram_o(signal_finish_addr_dram), 
+        .sa_state_o(sa_state)
     );
     
     dram_to_memory
@@ -550,7 +552,7 @@ module sparhixcel_design
     dram_to_memory
     #(
         .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
-        .DATA_OUT_BITWIDTH(N_ROWS_ARRAY * F_WIDTH)
+        .DATA_OUT_BITWIDTH(PARAMETERS_WIDTH)
 
     )
     dram_to_parameters

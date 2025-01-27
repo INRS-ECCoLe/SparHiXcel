@@ -45,9 +45,9 @@ module DRAM_ACCESS_CTRL
         input [DRAM_ADDR_WIDTH - 1 : 0] weight_finish_addr_dram_i,
         input [DRAM_ADDR_WIDTH - 1 : 0] signal_start_addr_dram_i,
         input [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram_i,
-        output [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] input_wr_address_o,
-        output [SIG_ADDRS_WIDTH - 1 : 0] weight_wr_address_o,
-        output [SIG_ADDRS_WIDTH - 1 : 0] signal_wr_address_o,
+        output reg [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] input_wr_address_o,
+        output reg [SIG_ADDRS_WIDTH - 1 : 0] weight_wr_address_o,
+        output reg [SIG_ADDRS_WIDTH - 1 : 0] signal_wr_address_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o
     );
     localparam delay_input = (DATA_IN_DRAM_WIDTH + I_WIDTH * N_ROWS_ARRAY - 1) / DATA_IN_DRAM_WIDTH;
@@ -57,13 +57,13 @@ module DRAM_ACCESS_CTRL
    
     
     reg input_addr_rst;
-    reg input_addr_ld;
+    //reg input_addr_ld;
     reg weight_wr_addr_rst;
-    reg weight_wr_addr_ld;
+    //reg weight_wr_addr_ld;
     reg dram_read_addr_rst;
     reg dram_read_addr_ld;
     reg signal_wr_addr_rst;
-    reg signal_wr_addr_ld;
+    //reg signal_wr_addr_ld;
     reg load_time_mem_rst;
     reg load_time_mem_ld;
     wire [MAX_LOAD_TIME_MEM_WIDTH - 1 : 0] load_time_memory;
@@ -85,57 +85,59 @@ module DRAM_ACCESS_CTRL
                 if ((weight_wr_address_o == 2 ** SIG_ADDRS_WIDTH - 1) || (dram_rd_address_o == weight_finish_addr_dram_i)) n_state = signals;
                 else n_state = weights;
             signals:
-                if ( == 1) n_state = inputs;
+                if ((signal_wr_address_o == 2 ** SIG_ADDRS_WIDTH - 1) || (dram_rd_address_o == signal_finish_addr_dram_i)) n_state = inputs;
                 else n_state = signals;
             inputs:
-                if (bram_ready_i == 1) n_state = reset;
+                if ((input_wr_address_o == 2 ** INPUT_FEATURE_ADDR_WIDTH - 1) || (dram_rd_address_o == input_finish_addr_dram_i)) n_state = reset;
                 else n_state = inputs;    
             default:
                 n_state = reset;
         endcase
         
     end
-    //counter for weight_wr_address_o.
-    counter
-    #(
-        .COUNTER_WIDTH(SIG_ADDRS_WIDTH)    
-    )
-    weight_write_address
-    (
-        .clk_i(clk_i),
-        .counter_rst_i(weight_wr_addr_rst),
-        .counter_ld_i(weight_wr_addr_ld),
-        .count_num_o(weight_wr_address_o)
-    );
+
+    //Register and counter to track weight_wr_address_o
     
+    always @(posedge clk_i or posedge weight_wr_addr_rst) begin
+        if (weight_wr_addr_rst) begin
+        
+            weight_wr_address_o <= {SIG_ADDRS_WIDTH{1'b0}}; 
+            
+        end else if ((load_time_memory == delay_signal) && p_state == weights) begin
+        
+            weight_wr_address_o <= weight_wr_address_o + 1; 
+
+        end
+    end
+
     
-    //counter for signal_wr_address_o.
-    counter
-    #(
-        .COUNTER_WIDTH(SIG_ADDRS_WIDTH)    
-    )
-    signal_write_address
-    (
-        .clk_i(clk_i),
-        .counter_rst_i(signal_wr_addr_rst),
-        .counter_ld_i(signal_wr_addr_ld),
-        .count_num_o(signal_wr_address_o)
-    );
+    //Register and counter to track signal_wr_address_o
     
+    always @(posedge clk_i or posedge signal_wr_addr_rst) begin
+        if (signal_wr_addr_rst) begin
+        
+            signal_wr_address_o <= {SIG_ADDRS_WIDTH{1'b0}}; 
+            
+        end else if ((load_time_memory == delay_signal) && p_state == signals) begin
+        
+            signal_wr_address_o <= signal_wr_address_o + 1; 
+
+        end
+    end
+
+    //Register and counter to track input_wr_address_o
     
-    //counter for input_wr_address_o.
-    counter
-    #(
-        .COUNTER_WIDTH(INPUT_FEATURE_ADDR_WIDTH)    
-    )
-    input_write_address
-    (
-        .clk_i(clk_i),
-        .counter_rst_i(input_addr_rst),
-        .counter_ld_i(input_addr_ld),
-        .count_num_o(input_wr_address_o)
-    );
-    
+    always @(posedge clk_i or posedge input_addr_rst) begin
+        if (input_addr_rst) begin
+        
+            input_wr_address_o <= {INPUT_FEATURE_ADDR_WIDTH{1'b0}}; 
+            
+        end else if ((load_time_memory == delay_input) && p_state == inputs) begin
+        
+            input_wr_address_o <= input_wr_address_o + 1; 
+
+        end
+    end
     //counter for dram_rd_address_o.
     counter
     #(

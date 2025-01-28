@@ -170,7 +170,10 @@ module sparhixcel_design
     wire input_ready; //from DRAM
     wire weight_ready;
     wire [2:0] dram_access_state;
-    
+    wire [SIG_ADDRS_WIDTH - 1 : 0] signal_wr_address;
+    wire [SIG_ADDRS_WIDTH - 1 : 0] weight_wr_address;
+    wire [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] input_wr_address;
+    wire order_empty_bram;
     genvar t;
     generate 
         for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
@@ -334,7 +337,8 @@ module sparhixcel_design
         .weight_finish_addr_dram_o(weight_finish_addr_dram),
         .signal_start_addr_dram_o(signal_start_addr_dram),
         .signal_finish_addr_dram_o(signal_finish_addr_dram), 
-        .sa_state_o(sa_state)
+        .sa_state_o(sa_state),
+        .order_empty_bram_o(order_empty_bram)
     );
     
     DRAM_ACCESS_CTRL

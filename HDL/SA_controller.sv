@@ -109,7 +109,8 @@ module SA_controller
         output [DRAM_ADDR_WIDTH - 1 : 0] weight_finish_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] signal_start_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] signal_finish_addr_dram_o, 
-        output [3:0] sa_state_o               
+        output [3:0] sa_state_o,   
+        output reg order_empty_bram_o  //          
     );
     reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
     reg rst_col, ld_col;//
@@ -188,24 +189,30 @@ module SA_controller
     always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: state_transition
         case(p_state)
             reset:
-                if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1) n_state = load;
+                if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 1) n_state = load;
                 else if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight; 
+                else if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 0) n_state = wait_bram; 
                 else n_state = reset;
             wait_weight:
-                if (weight_ready_i == 1) n_state = load;
+                if (general_rst_i == 1) n_state = reset;
+                else if (weight_ready_i == 1 && bram_ready_i == 1) n_state = load;
+                else if (weight_ready_i == 1 && bram_ready_i == 0)n_state = wait_bram; 
                 else n_state = wait_weight; 
-            load:
-                if (load_count_num == N_COLS_ARRAY-1) n_state = wait_bram;
-                else n_state = load;
             wait_bram:
-                if (bram_ready_i == 1) n_state = ready;
+                if (general_rst_i == 1) n_state = reset;
+                else if (bram_ready_i == 1) n_state = load;
                 else n_state = wait_bram;
+            load:
+                if (general_rst_i == 1) n_state = reset;
+                else if (load_count_num == N_COLS_ARRAY - 1) n_state = ready;
+                else n_state = load;
             ready:
-                if (ready_count_num == 2) n_state = start;
+                if (general_rst_i == 1) n_state = reset;
+                else if (ready_count_num == 2) n_state = start;
                 else n_state = ready;
             start:
                 if (general_rst_i == 1) n_state = reset;
-                else if (bram_ready_i == 0 && (count_input_a_round == number_input_a_round - 1) && input_ready_i == 0) n_state = waiting;
+                else if ((bram_addr_write_read_o == 2**BRAM_ADDR_WIDTH - 1)|| (count_input_a_round == number_input_a_round - 1) || input_ready_i == 0) n_state = waiting;
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
@@ -213,20 +220,24 @@ module SA_controller
                 else if ((num_channel < total_num_channels)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = next_channels;
                 else n_state = waiting;
             store:
-                if ((count_round_filter == iteration_num_filters) && (count_round_input == iteration_num_inputs)) n_state = reset;
+                if (general_rst_i == 1) n_state = reset;
+                else if ((count_round_filter == iteration_num_filters) && (count_round_input == iteration_num_inputs)) n_state = reset;
                 else if ((count_round_filter == iteration_num_filters) && (count_round_input != iteration_num_inputs)) n_state = next_input; 
                 else if (count_round_filter != iteration_num_filters) n_state = next_filters; 
                 else n_state = store;      
             next_channels:
-                if (input_ready_i == 1 && weight_ready_i == 1) n_state = load;
+                if (general_rst_i == 1) n_state = reset;
+                else if (input_ready_i == 1 && weight_ready_i == 1) n_state = load;
                 else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
                 else n_state = next_channels;
             next_filters:
-                if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
+                if (general_rst_i == 1) n_state = reset;
+                else if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
                 else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
                 else n_state = next_filters;   
             next_input:
-                if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
+                if (general_rst_i == 1) n_state = reset;
+                else if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
                 else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
                 else n_state = next_input;
             default:
@@ -267,6 +278,7 @@ module SA_controller
                 addrs_rom_signal_ld
                 bram_addr_write_read_ld
                 
+                order_empty_bram_o
                 
                 //counter_address_rom_rst = 1;
                 in_feature_address_rst = 1;
@@ -911,8 +923,8 @@ module SA_controller
         .clk_i(clk_i),
         .counter_rst_i(bram_addr_write_read_rst),
         .counter_ld_i(bram_addr_write_read_ld),
-        .count_num_o(bram_addr_write_read_o)
+        .count_num_o(bram_addr_read_write_o)
     );
-     
+    assign bram_addr_write_read_o = bram_addr_read_write_o + 1; 
 endmodule
 

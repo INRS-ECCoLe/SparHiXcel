@@ -56,7 +56,7 @@ module SA_controller
     (
         input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input [PARAMETERS_WIDTH - 1: 0] parameters_data_i,
-        input wr_parameters_ld_i,
+//        input wr_parameters_ld_i,
 //        input [$clog2(N+1)-1 : 0]filter_size_i,
         input clk_i,
         input general_rst_i,
@@ -77,10 +77,10 @@ module SA_controller
         output reg load_o,
         output reg ready_o,
         output reg start_op_o,
-        output reg rd_weight_ld_o,
-        output reg rd_weight_rst_o,
-        output reg rd_feature_ld_o,
-        output reg rd_rom_signals_ld_o,
+        output reg rd_weight_ld_o,//
+        output reg rd_weight_rst_o,//
+        output reg rd_feature_ld_o,//
+        output reg rd_rom_signals_ld_o,//
         output [SIG_ADDRS_WIDTH - 1 : 0] addrs_rom_signal_o,
         output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read_o,
         output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write_o,
@@ -94,15 +94,15 @@ module SA_controller
         output reg bram_wr_en_a_o [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
         output reg en_adder_node_o [0 : N_ROWS_ARRAY - 1],
         output reg sel_mux_node_o [0 : N_ROWS_ARRAY - 1],
-        output reg bram_rst_o,
-        output reg sel_mux_out_ld_o,
-        output reg sel_mux_out_rst_o,
-        output reg mux_out_reg_wr_en_o,
-        output reg mux_out_reg_rst_o,
-        output reg bram_wr_en_a_rst_o,
-        output reg bram_wr_en_a_ld_o, 
-        output reg bram_wr_en_b_rst_o,
-        output reg bram_wr_en_b_ld_o,
+        output reg bram_rst_o,//
+        output reg sel_mux_out_ld_o,//
+        output reg sel_mux_out_rst_o,//
+        output reg mux_out_reg_wr_en_o,//
+        output reg mux_out_reg_rst_o,//
+        output reg bram_wr_en_a_rst_o,//
+        output reg bram_wr_en_a_ld_o, //
+        output reg bram_wr_en_b_rst_o,//
+        output reg bram_wr_en_b_ld_o,//
         output [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram_o,
@@ -112,22 +112,22 @@ module SA_controller
         output [3:0] sa_state_o               
     );
     reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
-    reg rst_col, ld_col;
-    reg f_sel_ld, f_sel_rst;
-    reg sel_mux_tr_ld, sel_mux_tr_rst;
-    reg number_of_columns_ld, number_of_columns_rst;
-    reg en_adder_node_ld, en_adder_node_rst;
-    reg counter_waiting_op_rst;
-    reg counter_waiting_op_ld;
-    reg counter_load_rst;
-    reg counter_load_ld;
-    reg counter_ready_rst;
-    reg counter_ready_ld;
+    reg rst_col, ld_col;//
+    reg f_sel_ld, f_sel_rst;//
+    reg sel_mux_tr_ld, sel_mux_tr_rst;//
+    reg number_of_columns_ld, number_of_columns_rst;//
+    reg en_adder_node_ld, en_adder_node_rst;//
+    reg counter_waiting_op_rst;//
+    reg counter_waiting_op_ld;//
+    reg counter_load_rst;//
+    reg counter_load_ld;//
+    reg counter_ready_rst;//
+    reg counter_ready_ld;//
     //reg counter_address_rom_rst;
     //reg round_weight_ld;
-    reg in_feature_address_rst;
-    reg in_feature_address_ld;
-    reg end_weight;
+    reg in_feature_address_rst;//
+    reg in_feature_address_ld;//
+    //reg end_weight;
     //wire [COUNTER_ROUND_WIDTH - 1 : 0]round_num_weight;
     //reg counter_address_rom_ld;
     wire [READY_COUNTER_WIDTH - 1 : 0] ready_count_num;
@@ -138,9 +138,9 @@ module SA_controller
     wire [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr [0 : N_ROWS_ARRAY - 1];
     wire en_adder_node [0 : N_ROWS_ARRAY - 1];
     
-    wire num_input_a_round_rst;
-    wire num_input_a_round_ld;
-    wire num_channel_rst;
+    //wire num_input_a_round_rst;
+    //wire num_input_a_round_ld;
+    wire num_channel_rst;//
     reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_channel;
     reg increment_done_ch;   
     reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters; // number of iterations for covering all filters, for example: iteration_num_filters=3 that means the first iteration we cover like 25 filters , next iteration 27 filters, and the last we cover 23 filters and thus all 75 filters are finished
@@ -163,18 +163,18 @@ module SA_controller
     //wire filter_size_ld;
     reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] count_round_input;
     reg increment_done_round_input;
-    wire count_round_input_rst;
+    wire count_round_input_rst;//
     reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] count_round_filter;
     reg increment_done_round_filter;
-    wire count_round_filter_rst;
-    reg addrs_rom_signal_rst;
-    reg addrs_rom_signal_ld;
-    wire bram_addr_write_read_rst;
-    wire bram_addr_write_read_ld;
+    wire count_round_filter_rst;//
+    reg addrs_rom_signal_rst;//
+    reg addrs_rom_signal_ld;//
+    wire bram_addr_write_read_rst;//
+    wire bram_addr_write_read_ld;//
     wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
     wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
     wire bram_wr_en_a [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
-    wire bram_wr_en_b;  
+    //wire bram_wr_en_b;  
     
 
     
@@ -246,6 +246,28 @@ module SA_controller
                 counter_load_rst = 1;
                 counter_waiting_op_rst = 1;
                 counter_ready_rst = 1;
+                
+                //new 
+                num_channel_rst
+                count_round_input_rst
+                count_round_filter_rst
+                addrs_rom_signal_rst
+                bram_addr_write_read_rst
+                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o
+                mux_out_reg_rst_o
+                sel_mux_out_rst_o
+                bram_rst_o
+                
+                
+                sel_mux_out_ld_o
+                mux_out_reg_wr_en_o
+                bram_wr_en_a_ld_o
+                bram_wr_en_b_ld_o
+                addrs_rom_signal_ld
+                bram_addr_write_read_ld
+                
+                
                 //counter_address_rom_rst = 1;
                 in_feature_address_rst = 1;
                 rd_weight_rst_o = 1;

@@ -65,12 +65,12 @@ module sparhixcel_design
         //input [COUNTER_ROUND_WIDTH - 1: 0] n_round_weight_i,
         //input [$clog2(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] end_addr_in_feature_i,
         input [DATA_IN_DRAM_WIDTH - 1 : 0] mem_data_i,
-        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] wr_addrs_mem_i,
+//        input [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] wr_addrs_mem_i,
         //input wr_mem_ld_i,
         //input [N_ROWS_ARRAY * F_WIDTH - 1 : 0] mem2_data_i,
-        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem2_i,
+//        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] wr_addrs_mem2_i,
         //input wr_mem2_ld_i,
-        input [(SIG_ADDRS_WIDTH) - 1 : 0] wr_addrs_rom_signal_i,
+//        input [(SIG_ADDRS_WIDTH) - 1 : 0] wr_addrs_rom_signal_i,
         //input wr_rom_signals_ld_i,
         //input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
@@ -93,12 +93,11 @@ module sparhixcel_design
 //        input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
 //        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
 //        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
-        input input_ready_i, //from DRAM
-        input weight_ready_i,
+
         input bram_ready_i,
         
-        output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o
-        
+        output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o,
+        output [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o
     );
     
     wire rst;
@@ -168,6 +167,10 @@ module sparhixcel_design
     wire wr_parameters_ld;
     reg [PARAMETERS_WIDTH -1 : 0] data_parameters;
     wire [3:0]sa_state;
+    wire input_ready; //from DRAM
+    wire weight_ready;
+    wire [2:0] dram_access_state;
+    
     genvar t;
     generate 
         for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
@@ -277,7 +280,7 @@ module sparhixcel_design
     (
         .rom_signals_data_i(rom_signals_data),
         .parameters_data_i(data_parameters),
-        .wr_parameters_ld_i(wr_parameters_ld),
+//        .wr_parameters_ld_i(wr_parameters_ld),
 //        .filter_size_i(filter_size_i),
         .clk_i(clk_i),
         .general_rst_i(general_rst_i),
@@ -286,8 +289,8 @@ module sparhixcel_design
 //        .total_num_channels_i(total_num_channels_i),
 //        .iteration_num_inputs_i(iteration_num_inputs_i),
 //        .num_input_a_round_i(num_input_a_round_i),
-        .input_ready_i(input_ready_i),
-        .weight_ready_i(weight_ready_i),
+        .input_ready_i(input_ready),
+        .weight_ready_i(weight_ready),
         .bram_ready_i(bram_ready_i),
        
         //.end_feature_i(end_feature),
@@ -334,6 +337,40 @@ module sparhixcel_design
         .sa_state_o(sa_state)
     );
     
+    DRAM_ACCESS_CTRL
+    #(
+        .DRAM_ADDR_WIDTH(DRAM_ADDR_WIDTH),
+        .SIG_ADDRS_WIDTH(SIG_ADDRS_WIDTH),
+        .INPUT_FEATURE_ADDR_WIDTH(INPUT_FEATURE_ADDR_WIDTH),
+        .MAX_LOAD_TIME_MEM_WIDTH(MAX_LOAD_TIME_MEM_WIDTH),
+        .DATA_IN_DRAM_WIDTH(DATA_IN_DRAM_WIDTH),
+        .PARAMETERS_WIDTH(PARAMETERS_WIDTH),
+        .ROM_SIG_WIDTH(ROM_SIG_WIDTH),
+        .N_ROWS_ARRAY(N_ROWS_ARRAY),
+        .I_WIDTH(I_WIDTH),
+        .F_WIDTH(F_WIDTH)
+    )
+    dram_access_controller
+    (
+        .clk_i(clk_i),
+        .general_rst_i(general_rst_i),
+        .sa_state_i(sa_state),
+        .input_start_addr_dram_i(input_start_addr_dram),
+        .input_finish_addr_dram_i(input_finish_addr_dram),
+        .weight_start_addr_dram_i(weight_start_addr_dram),
+        .weight_finish_addr_dram_i(weight_finish_addr_dram),
+        .signal_start_addr_dram_i(signal_start_addr_dram),
+        .signal_finish_addr_dram_i(signal_finish_addr_dram),
+        .input_ready_o(input_ready),
+        .weight_ready_o(weight_ready),
+        .input_wr_address_o(input_wr_address),
+        .weight_wr_address_o(weight_wr_address),
+        .signal_wr_address_o(signal_wr_address),
+        .dram_rd_address_o(dram_rd_address_o),
+        .dram_access_state_o(dram_access_state)
+    );
+    
+    
     dram_to_memory
     #(
         .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
@@ -343,9 +380,9 @@ module sparhixcel_design
     dram_to_mem_signal
     (
         .clk_i(clk_i),                   
-        .dram_to_mem_rst_i(),                   
+        .dram_to_mem_rst_i(general_rst_i),                   
         .data_in_i(mem_data_i),         
-        .data_valid_i(),            
+        .data_valid_i(dram_access_state == 3'b011),            
         .data_out_o(mem_data_signal), 
         .memory_write_enable(wr_rom_signals_ld) 
     );
@@ -364,7 +401,7 @@ module sparhixcel_design
         .ena_i(1),
         .enb_i(rd_rom_signals_ld),
         .wea_i(wr_rom_signals_ld),
-        .addra_i(wr_addrs_rom_signal_i),
+        .addra_i(signal_wr_address),
         .addrb_i(addrs_rom_signal),
         .dia_i(mem_data_signal),
         .dob_o(rom_signals_data)
@@ -380,9 +417,9 @@ module sparhixcel_design
     dram_to_mem_input
     (
         .clk_i(clk_i),                   
-        .dram_to_mem_rst_i(),                   
+        .dram_to_mem_rst_i(general_rst_i),                   
         .data_in_i(mem_data_i),         
-        .data_valid_i(),            
+        .data_valid_i(dram_access_state == 3'b100),            
         .data_out_o(mem_data_input), 
         .memory_write_enable(wr_mem_ld) 
     ); 
@@ -398,7 +435,7 @@ module sparhixcel_design
         .ena_i(1),
         .enb_i(rd_feature_ld),
         .wea_i(wr_mem_ld),
-        .addra_i(wr_addrs_mem_i),
+        .addra_i(input_wr_address),
         .addrb_i(in_feature_addr),
         .dia_i(mem_data_input),
         .dob_o(in_feature_mem)
@@ -472,9 +509,9 @@ module sparhixcel_design
     dram_to_mem_weight
     (
         .clk_i(clk_i),                   
-        .dram_to_mem_rst_i(),                   
+        .dram_to_mem_rst_i(general_rst_i),                   
         .data_in_i(mem_data_i),         
-        .data_valid_i(),            
+        .data_valid_i(dram_access_state == 3'b010),            
         .data_out_o(mem_data_weight), 
         .memory_write_enable(wr_mem2_ld) 
     );
@@ -490,7 +527,7 @@ module sparhixcel_design
         .ena_i(1),
         .enb_i(rd_weight_ld),
         .wea_i(wr_mem2_ld),
-        .addra_i(wr_addrs_mem2_i),
+        .addra_i(weight_wr_address),
         .addrb_i(addrs_rom_signal),
         .dia_i(mem_data_weight),
         .dob_o(f_weight_mem)
@@ -558,9 +595,9 @@ module sparhixcel_design
     dram_to_parameters
     (
         .clk_i(clk_i),                   
-        .dram_to_mem_rst_i(),                   
+        .dram_to_mem_rst_i(general_rst_i),                   
         .data_in_i(mem_data_i),         
-        .data_valid_i(),            
+        .data_valid_i(dram_access_state == 3'b001),            
         .data_out_o(data_parameters), 
         .memory_write_enable(wr_parameters_ld) 
     );

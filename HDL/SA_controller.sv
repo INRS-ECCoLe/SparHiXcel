@@ -216,29 +216,32 @@ module SA_controller
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
-                else if ((num_channel >= total_num_channels) && (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = store;
-                else if ((num_channel < total_num_channels)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = next_channels;
+                else if ((num_channel >= total_num_channels - N_ROWS_ARRAY/filter_size) && (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = store;
+                else if ((num_channel < total_num_channels - N_ROWS_ARRAY/filter_size)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = next_channels;
                 else n_state = waiting;
             store:
                 if (general_rst_i == 1) n_state = reset;
-                else if ((count_round_filter == iteration_num_filters) && (count_round_input == iteration_num_inputs)) n_state = reset;
-                else if ((count_round_filter == iteration_num_filters) && (count_round_input != iteration_num_inputs)) n_state = next_input; 
-                else if (count_round_filter != iteration_num_filters) n_state = next_filters; 
+                else if ((count_round_filter == iteration_num_filters - 1) && (count_round_input == iteration_num_inputs - 1)) n_state = reset;
+                else if ((count_round_filter == iteration_num_filters - 1) && (count_round_input != iteration_num_inputs - 1)) n_state = next_input; 
+                else if (count_round_filter != iteration_num_filters - 1) n_state = next_filters; 
                 else n_state = store;      
             next_channels:
                 if (general_rst_i == 1) n_state = reset;
-                else if (input_ready_i == 1 && weight_ready_i == 1) n_state = load;
+                else if (input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 1) n_state = load;
                 else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
+                else if (input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 0) n_state = wait_bram;
                 else n_state = next_channels;
             next_filters:
                 if (general_rst_i == 1) n_state = reset;
-                else if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
+                else if (input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 1) n_state = load; 
                 else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
+                else if (input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 0) n_state = wait_bram;
                 else n_state = next_filters;   
             next_input:
                 if (general_rst_i == 1) n_state = reset;
-                else if (input_ready_i == 1 && weight_ready_i == 1) n_state = load; 
+                else if (input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 1) n_state = load; 
                 else if (input_ready_i == 1 && weight_ready_i == 0) n_state = wait_weight;
+                else if (input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 0) n_state = wait_bram;
                 else n_state = next_input;
             default:
                 n_state = reset;
@@ -755,12 +758,12 @@ module SA_controller
         if (num_channel_rst) begin
             num_channel <= {$clog2(MAX_TOTAL_CHANNEL_NUM){1'b0}}; // Reset num_channel
             increment_done_ch <= 0; // Reset the increment_done_ch flag
-        end else if (p_state == waiting && !increment_done_ch) begin
+        end else if (p_state == next_channels && !increment_done_ch) begin
         
             num_channel <= num_channel + N_ROWS_ARRAY/filter_size; 
             // Set the flag to indicate the increment is done
             increment_done_ch <= 1;
-        end else if (p_state != waiting) begin
+        end else if (p_state != next_channels) begin
             // Reset the flag when leaving the waiting
             increment_done_ch <= 0;
         end
@@ -771,12 +774,12 @@ module SA_controller
         if (num_channel_rst) begin
             count_round_input <= {$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER){1'b0}}; // Reset count_round_input
             increment_done_round_input <= 0; // Reset the increment_done_round_input flag
-        end else if (p_state == store && !increment_done_ch) begin
+        end else if (p_state == next_input && !increment_done_ch) begin
         
             count_round_input <= count_round_input + 1; 
             // Set the flag to indicate the increment is done
             increment_done_round_input <= 1;
-        end else if (p_state != store) begin
+        end else if (p_state != next_input) begin
             // Reset the flag when leaving the store
             increment_done_round_input <= 0;
         end
@@ -787,12 +790,12 @@ module SA_controller
         if (count_round_filter_rst) begin
             count_round_filter <= {$clog2(MAX_ITERATION_FILTER_NUM){1'b0}}; // Reset count_round_filter
             increment_done_round_filter <= 0; // Reset the increment_done_round_filter flag
-        end else if (p_state == store && !increment_done_ch) begin
+        end else if (p_state == next_filters && !increment_done_ch) begin
         
             count_round_filter <= count_round_filter + 1; 
             // Set the flag to indicate the increment is done
             increment_done_round_filter <= 1;
-        end else if (p_state != store) begin
+        end else if (p_state != next_filters) begin
             // Reset the flag when leaving the store
             increment_done_round_filter <= 0;
         end

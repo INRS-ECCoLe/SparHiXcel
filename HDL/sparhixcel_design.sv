@@ -145,8 +145,11 @@ module sparhixcel_design
     wire bram_wr_en_b_rst;
     wire bram_wr_en_b_ld;
     //wire bram_wr_en_b;
-    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read;
-    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write;
+    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_computation;
+    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_computation;
+    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_1;
+    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_2;
+    wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     //wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
@@ -310,8 +313,9 @@ module sparhixcel_design
         .rd_feature_ld_o(rd_feature_ld),
         .rd_rom_signals_ld_o(rd_rom_signals_ld),
         .addrs_rom_signal_o(addrs_rom_signal),
-        .bram_addr_write_read_o(bram_addr_write_read),
-        .bram_addr_read_write_o(bram_addr_read_write),
+        .bram_addr_write_read_o(bram_addr_write_computation),
+        .bram_addr_read_write_o(bram_addr_read_computation),
+        .bram_addr_max_o(bram_addr_max),
         .f_sel_o(f_sel),
         .row_num_o(row_num),
         .column_num_o(column_num),
@@ -329,8 +333,8 @@ module sparhixcel_design
         .mux_out_reg_rst_o(mux_out_reg_rst),
         .bram_wr_en_a_rst_o(bram_wr_en_a_rst),
         .bram_wr_en_a_ld_o(bram_wr_en_a_ld), 
-        .bram_wr_en_b_rst_o(bram_wr_en_b_rst),
-        .bram_wr_en_b_ld_o(bram_wr_en_b_ld),
+//        .bram_wr_en_b_rst_o(bram_wr_en_b_rst),
+//        .bram_wr_en_b_ld_o(bram_wr_en_b_ld),
         .input_start_addr_dram_o(input_start_addr_dram),
         .input_finish_addr_dram_o(input_finish_addr_dram),
         .weight_start_addr_dram_o(weight_start_addr_dram),
@@ -565,22 +569,22 @@ module sparhixcel_design
                         .bram_rst_i(bram_rst),
                         .bram_wr_en_a_i(bram_wr_en_a[f][col]),
                         .bram_wr_en_b_i(bram_wr_en_b[f][col]),
-                        .bram_addr_write_read_i(bram_addr_write_read),
-                        .bram_addr_read_write_i(bram_addr_read_write),
+                        .bram_addr_write_read_i(bram_addr_1),
+                        .bram_addr_read_write_i(bram_addr_2),
                         .bram_wr_en_a_rst_i(bram_wr_en_a_rst),
                         .bram_wr_en_a_ld_i(bram_wr_en_a_ld), 
-                        .bram_wr_en_b_rst_i(bram_wr_en_b_rst),
-                        .bram_wr_en_b_ld_i(bram_wr_en_b_ld), 
+//                        .bram_wr_en_b_rst_i(bram_wr_en_b_rst),
+//                        .bram_wr_en_b_ld_i(bram_wr_en_b_ld), 
     
                         .bram_wr_en_a_o(bram_wr_en_a[f][col+1]),
-                        .bram_wr_en_b_o(bram_wr_en_b[f][col+1]),
+//                        .bram_wr_en_b_o(bram_wr_en_b[f][col+1]),
                         .sel_mux_out_1_o(sel_mux_out_1[f][col + 1]),
                         .sel_mux_out_2_o(sel_mux_out_2[f][col + 1]),
                         .d_out_o(out_filter[f*N_COLS_ARRAY + col])
                     );
                     
                 end
-            end
+            end                                                                                                                                        
         end
     endgenerate 
     
@@ -605,4 +609,8 @@ module sparhixcel_design
         .data_out_o(data_parameters), 
         .memory_write_enable(wr_parameters_ld) 
     );
+    
+    
+    
+    
 endmodule

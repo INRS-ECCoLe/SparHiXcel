@@ -84,6 +84,7 @@ module SA_controller
         output [SIG_ADDRS_WIDTH - 1 : 0] addrs_rom_signal_o,
         output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read_o,
         output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write_o,
+        output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max_o,
         output reg [SEL_WIDTH - 1: 0] f_sel_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH -1 : 0]row_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o [0 : N_ROWS_ARRAY - 1],
@@ -101,8 +102,8 @@ module SA_controller
         output reg mux_out_reg_rst_o,//
         output reg bram_wr_en_a_rst_o,//
         output reg bram_wr_en_a_ld_o, //
-        output reg bram_wr_en_b_rst_o,//
-        output reg bram_wr_en_b_ld_o,//
+//        output reg bram_wr_en_b_rst_o,//
+//        output reg bram_wr_en_b_ld_o,//
         output [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram_o,
@@ -267,7 +268,7 @@ module SA_controller
                 count_round_filter_rst
                 addrs_rom_signal_rst
                 bram_addr_write_read_rst
-                bram_wr_en_b_rst_o
+//                bram_wr_en_b_rst_o
                 bram_wr_en_a_rst_o
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
@@ -277,7 +278,7 @@ module SA_controller
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
-                bram_wr_en_b_ld_o
+//                bram_wr_en_b_ld_o
                 addrs_rom_signal_ld
                 bram_addr_write_read_ld
                 
@@ -928,6 +929,6 @@ module SA_controller
         .counter_ld_i(bram_addr_write_read_ld),
         .count_num_o(bram_addr_read_write_o)
     );
-    assign bram_addr_write_read_o = bram_addr_read_write_o + 1; 
+    assign bram_addr_write_read_o = bram_addr_read_write_o - 1; 
 endmodule
 

@@ -47,11 +47,11 @@ module output_block
     input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write_i,
     input bram_wr_en_a_rst_i,
     input bram_wr_en_a_ld_i, 
-    input bram_wr_en_b_rst_i,
-    input bram_wr_en_b_ld_i, 
+//    input bram_wr_en_b_rst_i,
+//    input bram_wr_en_b_ld_i, 
     
     output reg bram_wr_en_a_o,
-    output reg bram_wr_en_b_o,
+//    output reg bram_wr_en_b_o,
     output reg [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_o,
     output reg [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_o,
     output signed [I_WIDTH + F_WIDTH - 1 : 0] d_out_o
@@ -133,7 +133,7 @@ module output_block
             bram_wr_en_a_o <= bram_wr_en_a_i;     
         end
     end
-    //Register for bram_wr_en_b
+/*    //Register for bram_wr_en_b
     
     always @ (posedge clk_i or posedge bram_wr_en_b_rst_i) begin 
         if (bram_wr_en_b_rst_i) begin
@@ -141,7 +141,7 @@ module output_block
         end else if (bram_wr_en_b_ld_i) begin   
             bram_wr_en_b_o <= bram_wr_en_b_i;     
         end
-    end
+    end*/
     //Register for sel_mux_out_1
     
     always @ (posedge clk_i or posedge sel_mux_rst_i) begin 
@@ -173,7 +173,7 @@ module output_block
         .clk_i(clk_i),
         .bram_rst_i(bram_rst_i),
         .bram_wr_en_a_i(bram_wr_en_a_o),
-        .bram_wr_en_b_i(bram_wr_en_b_o),
+        .bram_wr_en_b_i(bram_wr_en_b_i),
         .addr_a_i(bram_addr_write_read_i),
         .addr_b_i(bram_addr_read_write_i),
         .data_in_a_i(bram_data_write_a),

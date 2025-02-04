@@ -75,8 +75,8 @@ module sparhixcel_design
         //input [ROM_SIG_WIDTH - 1 : 0] rom_signals_data_i,
         input clk_i,
         input general_rst_i,
-        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final,
-        input bram_wr_en_b_i [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
+//        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final,
+//        input bram_wr_en_b_i [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1],
 //        input [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_i,
 //        input [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_i,
 //        input mux_out_reg_rst,
@@ -94,7 +94,7 @@ module sparhixcel_design
 //        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
 //        input [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] num_input_a_round_i,
 
-        input bram_ready_i,
+        
         
         output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o
@@ -139,7 +139,7 @@ module sparhixcel_design
     wire bram_rst;
     wire bram_wr_en_a[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY];
     wire bram_wr_en_a_first[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
-    wire bram_wr_en_b [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY];
+    wire bram_wr_en_b [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY - 1];
     wire bram_wr_en_a_rst;
     wire bram_wr_en_a_ld; 
     wire bram_wr_en_b_rst;
@@ -152,7 +152,7 @@ module sparhixcel_design
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
-    //wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
+    wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
     
     wire [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram;
     wire [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram;
@@ -177,11 +177,14 @@ module sparhixcel_design
     wire [SIG_ADDRS_WIDTH - 1 : 0] weight_wr_address;
     wire [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] input_wr_address;
     wire order_empty_bram;
+    wire bram_ready;
+//    wire bram_wr_en_b [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
+    
     genvar t;
     generate 
         for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
             assign bram_wr_en_a[t][0] = bram_wr_en_a_first[t];
-            assign bram_wr_en_b[t][0] = bram_wr_en_b_i[t];
+//            assign bram_wr_en_b[t][0] = bram_wr_en_b_i[t];
             assign sel_mux_out_1[t][0] = sel_mux_out_1_first [t];
             assign sel_mux_out_2[t][0] = sel_mux_out_2_first [t];    
         end
@@ -297,7 +300,7 @@ module sparhixcel_design
 //        .num_input_a_round_i(num_input_a_round_i),
         .input_ready_i(input_ready),
         .weight_ready_i(weight_ready),
-        .bram_ready_i(bram_ready_i),
+        .bram_ready_i(bram_ready),
        
         //.end_feature_i(end_feature),
         //.max_round_weight_i(n_round_weight_i),
@@ -588,6 +591,28 @@ module sparhixcel_design
         end
     endgenerate 
     
+    output_ctrl
+    #(
+        .NUMBER_SUPPORTED_FILTERS(NUMBER_SUPPORTED_FILTERS),
+        .N_COLS_ARRAY(N_COLS_ARRAY),
+        .DRAM_ADDR_WIDTH(DRAM_ADDR_WIDTH),
+        .BRAM_ADDR_WIDTH(BRAM_ADDR_WIDTH)
+    )
+    control_output
+    (
+        .clk_i(clk_i),
+        .general_rst_i(general_rst_i),
+        .order_empty_bram_i(order_empty_bram),
+        .bram_addr_write_computation_i(bram_addr_write_computation),
+        .bram_addr_read_computation_i(bram_addr_read_computation),
+        .bram_ready_o(bram_ready),
+        .bram_addr_max_i(bram_addr_max),
+        .sel_mux_final_o(sel_mux_final),
+        .bram_wr_en_b_o(bram_wr_en_b),
+        .bram_addr_1_o(bram_addr_1),
+        .bram_addr_2_o(bram_addr_2)
+        
+    );
     
     always @(*) begin
         final_output_o = out_filter[sel_mux_final];  

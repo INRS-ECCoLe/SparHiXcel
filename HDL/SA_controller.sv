@@ -142,7 +142,7 @@ module SA_controller
     
     //wire num_input_a_round_rst;
     //wire num_input_a_round_ld;
-    wire num_channel_rst;//
+    reg num_channel_rst;//
     reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_channel;
     reg increment_done_ch;   
     reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters; // number of iterations for covering all filters, for example: iteration_num_filters=3 that means the first iteration we cover like 25 filters , next iteration 27 filters, and the last we cover 23 filters and thus all 75 filters are finished
@@ -165,14 +165,14 @@ module SA_controller
     //wire filter_size_ld;
     reg [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] count_round_input;
     reg increment_done_round_input;
-    wire count_round_input_rst;//
+    reg count_round_input_rst;//
     reg [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] count_round_filter;
     reg increment_done_round_filter;
-    wire count_round_filter_rst;//
+    reg count_round_filter_rst;//
     reg addrs_rom_signal_rst;//
     reg addrs_rom_signal_ld;//
-    wire bram_addr_write_read_rst;//
-    wire bram_addr_write_read_ld;//
+    reg bram_addr_write_read_rst;//
+    reg bram_addr_write_read_ld;//
     wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
     wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
     wire bram_wr_en_a [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
@@ -263,26 +263,26 @@ module SA_controller
                 counter_ready_rst = 1;
                 
                 //new 
-                num_channel_rst
-                count_round_input_rst
-                count_round_filter_rst
-                addrs_rom_signal_rst
-                bram_addr_write_read_rst
+                num_channel_rst = 1;
+                count_round_input_rst = 1;
+                count_round_filter_rst = 1; //it should be one in next_input state 
+                addrs_rom_signal_rst = 1;
+                bram_addr_write_read_rst = 1;
 //                bram_wr_en_b_rst_o
-                bram_wr_en_a_rst_o
-                mux_out_reg_rst_o
-                sel_mux_out_rst_o
-                bram_rst_o
+                bram_wr_en_a_rst_o = 1;
+                mux_out_reg_rst_o = 1;
+                sel_mux_out_rst_o = 1;
+                bram_rst_o = 1;
                 
                 
-                sel_mux_out_ld_o
-                mux_out_reg_wr_en_o
-                bram_wr_en_a_ld_o
-//                bram_wr_en_b_ld_o
-                addrs_rom_signal_ld
-                bram_addr_write_read_ld
+                sel_mux_out_ld_o = 0;
+                mux_out_reg_wr_en_o = 0;
+                bram_wr_en_a_ld_o = 0;
+//                bram_wr_en_b_ld_o 
+                addrs_rom_signal_ld = 0;
+                bram_addr_write_read_ld = 0;
                 
-                order_empty_bram_o
+                order_empty_bram_o = 0; 
                 
                 //counter_address_rom_rst = 1;
                 in_feature_address_rst = 1;
@@ -309,7 +309,59 @@ module SA_controller
                 
             end
             wait_weight: begin
-            
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                
+                //new 
+                num_channel_rst = 0;
+                count_round_input_rst = 0;
+                count_round_filter_rst = 0; //it should be one in next_input state 
+                addrs_rom_signal_rst = 0;
+                bram_addr_write_read_rst = 0;
+//                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o = 1;
+                mux_out_reg_rst_o = 1;
+                sel_mux_out_rst_o = 1;
+                bram_rst_o = 1;
+                
+                
+                sel_mux_out_ld_o = 0;
+                mux_out_reg_wr_en_o = 0;
+                bram_wr_en_a_ld_o = 0;
+//                bram_wr_en_b_ld_o 
+                addrs_rom_signal_ld = 0;
+                bram_addr_write_read_ld = 0;
+                
+                order_empty_bram_o = 0; 
+                
+                //counter_address_rom_rst = 1;
+                in_feature_address_rst = 1;
+                rd_weight_rst_o = 1;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 0;
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                in_feature_address_ld = 0;
+                
+                rst_o = 1;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 0;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             
             end
             wait_bram: begin
@@ -575,10 +627,10 @@ module SA_controller
                 addrs_rom_signal_rst
                 bram_addr_write_read_rst
 //                bram_wr_en_b_rst_o
-                bram_wr_en_a_rst_o
-                mux_out_reg_rst_o
-                sel_mux_out_rst_o
-                bram_rst_o
+                bram_wr_en_a_rst_o = 1;
+                mux_out_reg_rst_o = 1;
+                sel_mux_out_rst_o = 1;
+                bram_rst_o = 
                 
                 
                 sel_mux_out_ld_o

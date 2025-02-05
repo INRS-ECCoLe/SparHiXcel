@@ -113,6 +113,8 @@ module SA_controller
         output [3:0] sa_state_o,   
         output reg order_empty_bram_o  //          
     );
+     
+    
     reg [NUM_COL_WIDTH - 1 : 0] count_col [0 : N_ROWS_ARRAY - 1]; 
     reg rst_col, ld_col;//
     reg f_sel_ld, f_sel_rst;//
@@ -127,8 +129,8 @@ module SA_controller
     reg counter_ready_ld;//
     //reg counter_address_rom_rst;
     //reg round_weight_ld;
-    reg in_feature_address_rst;//
-    reg in_feature_address_ld;//
+    //reg in_feature_address_rst;//
+   //reg in_feature_address_ld;//
     //reg end_weight;
     //wire [COUNTER_ROUND_WIDTH - 1 : 0]round_num_weight;
     //reg counter_address_rom_ld;
@@ -177,8 +179,8 @@ module SA_controller
     wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
     wire bram_wr_en_a [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
     //wire bram_wr_en_b;  
-    
-
+    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] input_round_number;
+    wire [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] max_input_round_number = (total_num_channels + N_ROWS_ARRAY - 1)/N_ROWS_ARRAY;
     
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
@@ -263,11 +265,11 @@ module SA_controller
                 counter_ready_rst = 1;
                 
                 //new 
-                num_channel_rst = 1;
-                count_round_input_rst = 1;
+                num_channel_rst = 1;        //it should be one in store state 
+                count_round_input_rst = 1;  //it should be one in only reset state 
                 count_round_filter_rst = 1; //it should be one in next_input state 
-                addrs_rom_signal_rst = 1;
-                bram_addr_write_read_rst = 1;
+                addrs_rom_signal_rst = 1;   //it should be one in only reset state 
+                bram_addr_write_read_rst = 1; //it should be one in store state 
 //                bram_wr_en_b_rst_o
                 bram_wr_en_a_rst_o = 1;
                 mux_out_reg_rst_o = 1;
@@ -285,7 +287,7 @@ module SA_controller
                 order_empty_bram_o = 0; 
                 
                 //counter_address_rom_rst = 1;
-                in_feature_address_rst = 1;
+                //in_feature_address_rst = 1;
                 rd_weight_rst_o = 1;
                 
                 ld_col = 0;
@@ -297,7 +299,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
-                in_feature_address_ld = 0;
+                //in_feature_address_ld = 0;
                 
                 rst_o = 1;
                 load_o = 0;
@@ -326,9 +328,9 @@ module SA_controller
                 bram_addr_write_read_rst = 0;
 //                bram_wr_en_b_rst_o
                 bram_wr_en_a_rst_o = 1;
-                mux_out_reg_rst_o = 1;
-                sel_mux_out_rst_o = 1;
-                bram_rst_o = 1;
+                mux_out_reg_rst_o = 0;
+                sel_mux_out_rst_o = 0;
+                bram_rst_o = 0;
                 
                 
                 sel_mux_out_ld_o = 0;
@@ -341,7 +343,7 @@ module SA_controller
                 order_empty_bram_o = 0; 
                 
                 //counter_address_rom_rst = 1;
-                in_feature_address_rst = 1;
+                //in_feature_address_rst = 0;
                 rd_weight_rst_o = 1;
                 
                 ld_col = 0;
@@ -353,7 +355,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
-                in_feature_address_ld = 0;
+//in_feature_address_ld = 0;
                 
                 rst_o = 1;
                 load_o = 0;
@@ -365,7 +367,59 @@ module SA_controller
             
             end
             wait_bram: begin
-            
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                
+                //new 
+                num_channel_rst = 0;
+                count_round_input_rst = 0;
+                count_round_filter_rst = 0; //it should be one in next_input state 
+                addrs_rom_signal_rst = 0;
+                bram_addr_write_read_rst = 0;
+//                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o = 1;
+                mux_out_reg_rst_o = 0;
+                sel_mux_out_rst_o = 0;
+                bram_rst_o = 0;
+                
+                
+                sel_mux_out_ld_o = 0;
+                mux_out_reg_wr_en_o = 0;
+                bram_wr_en_a_ld_o = 0;
+//                bram_wr_en_b_ld_o 
+                addrs_rom_signal_ld = 0;
+                bram_addr_write_read_ld = 0;
+                
+                order_empty_bram_o = 0; 
+                
+                //counter_address_rom_rst = 1;
+                //in_feature_address_rst = 0;
+                rd_weight_rst_o = 1;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 0;
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+//in_feature_address_ld = 0;
+                
+                rst_o = 1;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 0;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             end
             load: begin
                 rst_col = 0;
@@ -400,7 +454,7 @@ module SA_controller
                 order_empty_bram_o
                 
                 //counter_address_rom_rst = 0;
-                in_feature_address_rst = 1;
+                //in_feature_address_rst = 1;
                 rd_weight_rst_o = 0;
                 
                 ld_col = 1;
@@ -412,7 +466,7 @@ module SA_controller
                 counter_load_ld = 1;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 1;
-                in_feature_address_ld = 0;
+                //in_feature_address_ld = 0;
                 
                 rst_o = 0;
                 load_o = 1;
@@ -456,7 +510,7 @@ module SA_controller
                 order_empty_bram_o
                 
                 //counter_address_rom_rst = 0;
-                in_feature_address_rst = 0;
+                //in_feature_address_rst = 0;
                 rd_weight_rst_o = 0; 
                 
                 ld_col = 0;
@@ -468,7 +522,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 1;
                 //counter_address_rom_ld = 0;
-                in_feature_address_ld = 1;
+                //in_feature_address_ld = 1;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -513,7 +567,7 @@ module SA_controller
                 order_empty_bram_o
                 
                 //counter_address_rom_rst = 0;
-                in_feature_address_rst = 0;
+                //in_feature_address_rst = 0;
                 rd_weight_rst_o = 0;
                 
                 ld_col = 0;
@@ -525,7 +579,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
-                in_feature_address_ld = 1;
+                //in_feature_address_ld = 1;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -569,7 +623,7 @@ module SA_controller
                 order_empty_bram_o
                 
                 //counter_address_rom_rst = 0;
-                in_feature_address_rst = 1;
+                //in_feature_address_rst = 1;
                 rd_weight_rst_o = 0;
                 
                 ld_col = 0;
@@ -582,7 +636,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
-                in_feature_address_ld = 0;
+                //in_feature_address_ld = 0;
                 
                 rst_o = 0;
                 load_o = 0;
@@ -595,19 +649,231 @@ module SA_controller
             end
             
             store: begin
-            
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                                
+                //new 
+                num_channel_rst
+                count_round_input_rst
+                count_round_filter_rst
+                addrs_rom_signal_rst
+                bram_addr_write_read_rst
+//                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o
+                mux_out_reg_rst_o
+                sel_mux_out_rst_o
+                bram_rst_o
+                
+                
+                sel_mux_out_ld_o
+                mux_out_reg_wr_en_o
+                bram_wr_en_a_ld_o
+//                bram_wr_en_b_ld_o
+                addrs_rom_signal_ld
+                bram_addr_write_read_ld
+                
+                order_empty_bram_o
+                
+                //counter_address_rom_rst = 0;
+                //in_feature_address_rst = 1;
+                rd_weight_rst_o = 0;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 1;
+         
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                //in_feature_address_ld = 0;
+                
+                rst_o = 0;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 1;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             end
             
             next_channels: begin 
-            
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                                
+                //new 
+                num_channel_rst
+                count_round_input_rst
+                count_round_filter_rst
+                addrs_rom_signal_rst
+                bram_addr_write_read_rst
+//                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o
+                mux_out_reg_rst_o
+                sel_mux_out_rst_o
+                bram_rst_o
+                
+                
+                sel_mux_out_ld_o
+                mux_out_reg_wr_en_o
+                bram_wr_en_a_ld_o
+//                bram_wr_en_b_ld_o
+                addrs_rom_signal_ld
+                bram_addr_write_read_ld
+                
+                order_empty_bram_o
+                
+                //counter_address_rom_rst = 0;
+                //in_feature_address_rst = 1;
+                rd_weight_rst_o = 0;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 1;
+         
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                //in_feature_address_ld = 0;
+                
+                rst_o = 0;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 1;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             end
             
             next_filters: begin
-            
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                                
+                //new 
+                num_channel_rst
+                count_round_input_rst
+                count_round_filter_rst
+                addrs_rom_signal_rst
+                bram_addr_write_read_rst
+//                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o
+                mux_out_reg_rst_o
+                sel_mux_out_rst_o
+                bram_rst_o
+                
+                
+                sel_mux_out_ld_o
+                mux_out_reg_wr_en_o
+                bram_wr_en_a_ld_o
+//                bram_wr_en_b_ld_o
+                addrs_rom_signal_ld
+                bram_addr_write_read_ld
+                
+                order_empty_bram_o
+                
+                //counter_address_rom_rst = 0;
+                //in_feature_address_rst = 1;
+                rd_weight_rst_o = 0;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 1;
+         
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                //in_feature_address_ld = 0;
+                
+                rst_o = 0;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 1;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             end
             
             next_input: begin
-           
+                rst_col = 1;
+                f_sel_rst = 1;
+                sel_mux_tr_rst= 1;
+                number_of_columns_rst = 1;
+                en_adder_node_rst = 1;
+                counter_load_rst = 1;
+                counter_waiting_op_rst = 1;
+                counter_ready_rst = 1;
+                                
+                //new 
+                num_channel_rst
+                count_round_input_rst
+                count_round_filter_rst
+                addrs_rom_signal_rst
+                bram_addr_write_read_rst
+//                bram_wr_en_b_rst_o
+                bram_wr_en_a_rst_o
+                mux_out_reg_rst_o
+                sel_mux_out_rst_o
+                bram_rst_o
+                
+                
+                sel_mux_out_ld_o
+                mux_out_reg_wr_en_o
+                bram_wr_en_a_ld_o
+//                bram_wr_en_b_ld_o
+                addrs_rom_signal_ld
+                bram_addr_write_read_ld
+                
+                order_empty_bram_o
+                
+                //counter_address_rom_rst = 0;
+                //in_feature_address_rst = 1;
+                rd_weight_rst_o = 0;
+                
+                ld_col = 0;
+                f_sel_ld = 0;
+                sel_mux_tr_ld = 0;
+                number_of_columns_ld = 0;
+                en_adder_node_ld = 0;
+                counter_waiting_op_ld = 1;
+         
+                counter_load_ld = 0;
+                counter_ready_ld = 0;
+                //counter_address_rom_ld = 0;
+                //in_feature_address_ld = 0;
+                
+                rst_o = 0;
+                load_o = 0;
+                ready_o = 0;
+                start_op_o = 1;
+                rd_weight_ld_o = 0;
+                rd_feature_ld_o = 0;
+                rd_rom_signals_ld_o = 0;
             end
             
             default: begin
@@ -643,7 +909,7 @@ module SA_controller
                 order_empty_bram_o
                 
                 //counter_address_rom_rst = 1;
-                in_feature_address_rst = 1;
+                //in_feature_address_rst = 1;
                 rd_weight_rst_o = 1;
                 
                 ld_col = 0;
@@ -656,7 +922,7 @@ module SA_controller
                 counter_load_ld = 0;
                 counter_ready_ld = 0;
                 //counter_address_rom_ld = 0;
-                in_feature_address_ld = 0;
+                //in_feature_address_ld = 0;
                 
                 rst_o = 1;
                 load_o = 0;
@@ -950,9 +1216,11 @@ module SA_controller
         if (num_channel_rst) begin
             num_channel <= {$clog2(MAX_TOTAL_CHANNEL_NUM){1'b0}}; // Reset num_channel
             increment_done_ch <= 0; // Reset the increment_done_ch flag
+            input_round_number <= 0;
         end else if (p_state == next_channels && !increment_done_ch) begin
         
             num_channel <= num_channel + N_ROWS_ARRAY/filter_size; 
+            input_round_number <= input_round_number + 1; 
             // Set the flag to indicate the increment is done
             increment_done_ch <= 1;
         end else if (p_state != next_channels) begin
@@ -963,7 +1231,7 @@ module SA_controller
     //Register and adder to track count_round_input 
     
     always @(posedge clk_i or posedge count_round_input_rst) begin
-        if (num_channel_rst) begin
+        if (count_round_input_rst) begin
             count_round_input <= {$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER){1'b0}}; // Reset count_round_input
             increment_done_round_input <= 0; // Reset the increment_done_round_input flag
         end else if (p_state == next_input && !increment_done_ch) begin
@@ -1080,7 +1348,7 @@ module SA_controller
      //counter for in_feature_address.
 
       
-    counter
+/*    counter
     #(
         .COUNTER_WIDTH(INPUT_FEATURE_ADDR_WIDTH)    
     )
@@ -1090,8 +1358,8 @@ module SA_controller
         .counter_rst_i(in_feature_address_rst),
         .counter_ld_i(in_feature_address_ld),
         .count_num_o(in_feature_addr_o)
-    );
-     
+    );*/
+    assign in_feature_addr_o = count_input_a_round + input_round_number * number_input_a_round + count_round_input *  max_input_round_number * number_input_a_round;
      //counter for count_input_a_round.
     counter
     #(

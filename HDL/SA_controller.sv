@@ -181,6 +181,10 @@ module SA_controller
     //wire bram_wr_en_b;  
     reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] input_round_number;
     wire [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] max_input_round_number = (total_num_channels + N_ROWS_ARRAY - 1)/N_ROWS_ARRAY;
+    reg [SEL_MUX_TR_WIDTH - 1 : 0] pre_sel_mux_tr [0 : N_ROWS_ARRAY - 1];
+    reg start_wait_rst; 
+    reg start_wait_ld;
+    wire [WAITING_OP_COUNTER_WIDTH - 1 : 0] start_wait_count_num;
     
     localparam [3:0]
         reset = 4'b0000 , load = 4'b0001, wait_weight = 4'b0010,
@@ -189,7 +193,7 @@ module SA_controller
         next_input = 4'b1001, wait_bram = 4'b1010;
     reg [3:0] p_state, n_state;
     assign sa_state_o = p_state; 
-    always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: state_transition
+    always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size or max_input_round_number) begin: state_transition
         case(p_state)
             reset:
                 if (general_rst_i == 0 && input_ready_i == 1 && weight_ready_i == 1 && bram_ready_i == 1) n_state = load;
@@ -219,8 +223,8 @@ module SA_controller
                 else n_state = start;
             waiting:
                 if (general_rst_i == 1) n_state = reset;
-                else if ((num_channel >= total_num_channels - N_ROWS_ARRAY/filter_size) && (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = store;
-                else if ((num_channel < total_num_channels - N_ROWS_ARRAY/filter_size)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6)) n_state = next_channels;
+                else if ((num_channel >= total_num_channels - N_ROWS_ARRAY/filter_size) && (waiting_op_count_num == 2 * (filter_size - 1) + 6 + max_input_round_number)) n_state = store;
+                else if ((num_channel < total_num_channels - N_ROWS_ARRAY/filter_size)&& (waiting_op_count_num == 2 * (filter_size - 1) + 6 + max_input_round_number)) n_state = next_channels;
                 else n_state = waiting;
             store:
                 if (general_rst_i == 1) n_state = reset;
@@ -252,7 +256,7 @@ module SA_controller
         
     end
      
-    always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size) begin: output_assignments
+    always @(p_state or general_rst_i or input_ready_i or load_count_num or count_round_filter or iteration_num_inputs or count_round_input or iteration_num_filters or num_channel or total_num_channels or ready_count_num or count_input_a_round or number_input_a_round or weight_ready_i or bram_ready_i or waiting_op_count_num or filter_size or max_input_round_number) begin: output_assignments
         case(p_state)
             reset: begin
                 rst_col = 1;
@@ -269,45 +273,46 @@ module SA_controller
                 count_round_input_rst = 1;  //it should be one in only reset state 
                 count_round_filter_rst = 1; //it should be one in next_input state 
                 addrs_rom_signal_rst = 1;   //it should be one in only reset state 
-                bram_addr_write_read_rst = 1; //it should be one in store state 
+                bram_addr_write_read_rst = 1; //it should be one in load state 
 //                bram_wr_en_b_rst_o
-                bram_wr_en_a_rst_o = 1;
-                mux_out_reg_rst_o = 1;
-                sel_mux_out_rst_o = 1;
-                bram_rst_o = 1;
+                bram_wr_en_a_rst_o = 1;     //it should be zero in load, ready, start, waiting.
+                mux_out_reg_rst_o = 1;      //it should be zero in load, ready, start, waiting.    
+                sel_mux_out_rst_o = 1;      //it should be zero in load, ready, start, waiting.
+                bram_rst_o = 1;             //it should be one only in reset state.
+                start_wait_rst = 1;         //it should be zero in start state.
                 
-                
-                sel_mux_out_ld_o = 0;
-                mux_out_reg_wr_en_o = 0;
-                bram_wr_en_a_ld_o = 0;
+                start_wait_ld = 0;          //it should be one in start.
+                sel_mux_out_ld_o = 0;       //it should be one only in load.
+                mux_out_reg_wr_en_o = 0;    //it should be one only in load.
+                bram_wr_en_a_ld_o = 0;      //it should be one only in load.
 //                bram_wr_en_b_ld_o 
-                addrs_rom_signal_ld = 0;
-                bram_addr_write_read_ld = 0;
+                addrs_rom_signal_ld = 0;    //it should be one only in load.
+                bram_addr_write_read_ld = 0;//it should be one in start and waiting.  ****maybe i need to make this signal one after a delay in start state since it should wait until the first output to be reached to the bottom of the PE array.
                 
-                order_empty_bram_o = 0; 
+                order_empty_bram_o = 0;     // only one in store state.    
                 
                 //counter_address_rom_rst = 1;
                 //in_feature_address_rst = 1;
-                rd_weight_rst_o = 1;
+                rd_weight_rst_o = 1;        //only in load is zero.
                 
-                ld_col = 0;
-                f_sel_ld = 0;
-                sel_mux_tr_ld = 0;
-                number_of_columns_ld = 0;
-                en_adder_node_ld = 0;
-                counter_waiting_op_ld = 0;
-                counter_load_ld = 0;
-                counter_ready_ld = 0;
+                ld_col = 0;                 // only in load is one.
+                f_sel_ld = 0;                // only in load is one.
+                sel_mux_tr_ld = 0;            // only in load is one.   
+                number_of_columns_ld = 0;        // only in load is one.
+                en_adder_node_ld = 0;            // only in load is one.
+                counter_waiting_op_ld = 0;       // only in waiting is one.
+                counter_load_ld = 0;             // only in load is one.
+                counter_ready_ld = 0;              // only in ready is one.  
                 //counter_address_rom_ld = 0;
                 //in_feature_address_ld = 0;
                 
-                rst_o = 1;
-                load_o = 0;
-                ready_o = 0;
-                start_op_o = 0;
-                rd_weight_ld_o = 0;
-                rd_feature_ld_o = 0;
-                rd_rom_signals_ld_o = 0;
+                rst_o = 1;                       //  in load, ready, start, waiting is zero.
+                load_o = 0;                     // in load is 1.
+                ready_o = 0;                    // in ready is 1.    
+                start_op_o = 0;                 //in start and waiting is 1.
+                rd_weight_ld_o = 0;         //only in load is one.
+                rd_feature_ld_o = 0;        // in ready, start is 1.
+                rd_rom_signals_ld_o = 0;    
                 
             end
             wait_weight: begin
@@ -331,8 +336,9 @@ module SA_controller
                 mux_out_reg_rst_o = 0;
                 sel_mux_out_rst_o = 0;
                 bram_rst_o = 0;
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o = 0;
                 mux_out_reg_wr_en_o = 0;
                 bram_wr_en_a_ld_o = 0;
@@ -387,8 +393,9 @@ module SA_controller
                 mux_out_reg_rst_o = 0;
                 sel_mux_out_rst_o = 0;
                 bram_rst_o = 0;
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o = 0;
                 mux_out_reg_wr_en_o = 0;
                 bram_wr_en_a_ld_o = 0;
@@ -442,8 +449,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -498,8 +506,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -555,8 +564,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -611,8 +621,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -669,8 +680,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -726,8 +738,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -783,8 +796,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -840,8 +854,9 @@ module SA_controller
                 mux_out_reg_rst_o
                 sel_mux_out_rst_o
                 bram_rst_o
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -897,8 +912,9 @@ module SA_controller
                 mux_out_reg_rst_o = 1;
                 sel_mux_out_rst_o = 1;
                 bram_rst_o = 
+                start_wait_rst
                 
-                
+                start_wait_ld
                 sel_mux_out_ld_o
                 mux_out_reg_wr_en_o
                 bram_wr_en_a_ld_o
@@ -1025,19 +1041,14 @@ module SA_controller
         end
     end
     //Register for sel_mux_out_1_o
-    reg sel_mux_out_1_rst;
-    reg sel_mux_out_1_ld;
-    reg sel_mux_out_2_rst;
-    reg sel_mux_out_2_ld; 
-    reg bram_wr_en_a_rst;
-    reg bram_wr_en_a_ld;
-    always @ (posedge clk_i or posedge sel_mux_out_1_rst) begin 
+
+    always @ (posedge clk_i or posedge sel_mux_out_rst_o) begin 
         
-        if (sel_mux_out_1_rst) begin
+        if (sel_mux_out_rst_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 sel_mux_out_1_o [i] <= 0;
             end    
-        end else if (sel_mux_out_1_ld) begin
+        end else if (sel_mux_out_ld_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 sel_mux_out_1_o [i] <= sel_mux_out_1 [i];
             end   
@@ -1045,13 +1056,13 @@ module SA_controller
     end
     //Register for sel_mux_out_2_o
     
-    always @ (posedge clk_i or posedge sel_mux_out_2_rst) begin 
+    always @ (posedge clk_i or posedge sel_mux_out_rst_o) begin 
         
-        if (sel_mux_out_2_rst) begin
+        if (sel_mux_out_rst_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 sel_mux_out_2_o [i] <= 0;
             end    
-        end else if (sel_mux_out_2_ld) begin
+        end else if (sel_mux_out_ld_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 sel_mux_out_2_o [i] <= sel_mux_out_2 [i];
             end   
@@ -1059,13 +1070,13 @@ module SA_controller
     end
     //Register for bram_wr_en_a_o
     
-    always @ (posedge clk_i or posedge bram_wr_en_a_rst) begin 
+    always @ (posedge clk_i or posedge bram_wr_en_a_rst_o) begin 
         
-        if (bram_wr_en_a_rst) begin
+        if (bram_wr_en_a_rst_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 bram_wr_en_a_o [i] <= 0;
             end    
-        end else if (bram_wr_en_a_ld) begin
+        end else if (bram_wr_en_a_ld_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 bram_wr_en_a_o [i] <= bram_wr_en_a [i];
             end   
@@ -1087,7 +1098,7 @@ module SA_controller
     end
     
     //Register for sel_mux_tr_o
-    reg [SEL_MUX_TR_WIDTH - 1 : 0] pre_sel_mux_tr [0 : N_ROWS_ARRAY - 1];
+
     always @ (posedge clk_i or posedge sel_mux_tr_rst) begin 
         
         if (sel_mux_tr_rst) begin 
@@ -1330,7 +1341,19 @@ module SA_controller
         .counter_ld_i(counter_waiting_op_ld),
         .count_num_o(waiting_op_count_num)
     );
-    
+    //counter for waiting required time in start state for the first partial sum to be reached to the bottom of the PE array.
+
+    counter
+    #(
+        .COUNTER_WIDTH(WAITING_OP_COUNTER_WIDTH)    
+    )
+    start_wait_counter
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(start_wait_rst),
+        .counter_ld_i(start_wait_ld && (start_wait_count_num < 2 * (filter_size - 1) + 6 + max_input_round_number)),
+        .count_num_o(start_wait_count_num)
+    );
     //counter for ready state.
      
     counter
@@ -1385,9 +1408,10 @@ module SA_controller
     (
         .clk_i(clk_i),
         .counter_rst_i(bram_addr_write_read_rst),
-        .counter_ld_i(bram_addr_write_read_ld),
+        .counter_ld_i(bram_addr_write_read_ld && (start_wait_count_num >= 2 * (filter_size - 1) + 6 + max_input_round_number)),
         .count_num_o(bram_addr_read_write_o)
     );
     assign bram_addr_write_read_o = bram_addr_read_write_o - 1; 
+    assign bram_addr_max_o = bram_addr_read_write_o;
 endmodule
 

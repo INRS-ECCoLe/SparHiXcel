@@ -53,10 +53,10 @@ module DRAM_ACCESS_CTRL
         output reg [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o,
         output [2:0] dram_access_state_o
     );
-    localparam delay_input = (DATA_IN_DRAM_WIDTH + I_WIDTH * N_ROWS_ARRAY - 1) / DATA_IN_DRAM_WIDTH;
-    localparam delay_signal = (DATA_IN_DRAM_WIDTH + ROM_SIG_WIDTH - 1) / DATA_IN_DRAM_WIDTH;
-    localparam delay_weight = (DATA_IN_DRAM_WIDTH + F_WIDTH * N_ROWS_ARRAY - 1) / DATA_IN_DRAM_WIDTH;
-    localparam delay_parameter = (DATA_IN_DRAM_WIDTH + PARAMETERS_WIDTH - 1) / DATA_IN_DRAM_WIDTH;
+    localparam delay_input = 1 + (DATA_IN_DRAM_WIDTH + I_WIDTH * N_ROWS_ARRAY - 1) / DATA_IN_DRAM_WIDTH;
+    localparam delay_signal = 1 + (DATA_IN_DRAM_WIDTH + ROM_SIG_WIDTH - 1) / DATA_IN_DRAM_WIDTH;
+    localparam delay_weight = 1 + (DATA_IN_DRAM_WIDTH + F_WIDTH * N_ROWS_ARRAY - 1) / DATA_IN_DRAM_WIDTH;
+    localparam delay_parameter = 1 + (DATA_IN_DRAM_WIDTH + PARAMETERS_WIDTH - 1) / DATA_IN_DRAM_WIDTH;
    
     
     reg input_addr_rst;
@@ -246,7 +246,7 @@ module DRAM_ACCESS_CTRL
         
             weight_wr_address_o <= {SIG_ADDRS_WIDTH{1'b0}}; 
             
-        end else if ((load_time_memory == delay_signal - 1) && p_state == weights) begin
+        end else if ((load_time_memory == delay_weight - 1) && p_state == weights) begin
         
             weight_wr_address_o <= weight_wr_address_o + 1; 
 

@@ -38,20 +38,37 @@ module dram_to_memory
     localparam DATA_ACCU_BITWIDTH = DATA_IN_BITWIDTH * DIV_CEILING;
     reg [DATA_ACCU_BITWIDTH - 1 : 0] accumulated_data; // Register to store accumulated DATA_OUT_BITWIDTH bits
     reg [$clog2(DATA_ACCU_BITWIDTH) -1 : 0] bit_count;          // Counter for the number of bits accumulated
-
-
-
+    reg [DATA_IN_BITWIDTH - 1 :0] data_in;
+    wire counter;
+    always @(posedge clk_i or posedge dram_to_mem_rst_i) begin
+        if (dram_to_mem_rst_i) begin
+            data_in <= {DATA_IN_BITWIDTH{1'b0}};
+        end else if (data_valid_i) begin 
+            data_in <= data_in_i;
+        end
+    end
+    counter
+    #(
+        .COUNTER_WIDTH(1)    
+    )
+    count_one_clk_delay
+    (
+        .clk_i(clk_i),
+        .counter_rst_i(dram_to_mem_rst_i),
+        .counter_ld_i(data_valid_i&& counter != 1),
+        .count_num_o(counter)
+    ); 
     always @(posedge clk_i or posedge dram_to_mem_rst_i) begin
         if (dram_to_mem_rst_i) begin
             accumulated_data <= {DATA_ACCU_BITWIDTH{1'b0}};  // Reset accumulated data
             bit_count <= {$clog2(DATA_ACCU_BITWIDTH){1'b0}};           // Reset bit count
             memory_write_enable <= 0;      // Disable BRAM write
-        end else if (data_valid_i) begin
+        end else if (data_valid_i && (counter == 1)) begin
             if (DATA_IN_BITWIDTH < DATA_OUT_BITWIDTH) begin
 
                 if (bit_count < DATA_ACCU_BITWIDTH - 1)begin
                 
-                    accumulated_data <= {accumulated_data[DATA_ACCU_BITWIDTH - DATA_IN_BITWIDTH - 1 : 0], data_in_i};
+                    accumulated_data <= {accumulated_data[DATA_ACCU_BITWIDTH - DATA_IN_BITWIDTH - 1 : 0], data_in};
                     bit_count <= bit_count + DATA_IN_BITWIDTH;
               
                 end
@@ -68,7 +85,7 @@ module dram_to_memory
                 end
             end else begin
             
-                data_out_o <= data_in_i[DATA_IN_BITWIDTH - 1 : DATA_IN_BITWIDTH - DATA_OUT_BITWIDTH];
+                data_out_o <= data_in[DATA_IN_BITWIDTH - 1 : DATA_IN_BITWIDTH - DATA_OUT_BITWIDTH];
                 memory_write_enable <= 1;
             end    
         end 

@@ -18,16 +18,16 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 16;
-localparam N_COLS_ARRAY = 16;
+localparam N_ROWS_ARRAY = 15;
+localparam N_COLS_ARRAY = 15;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
-localparam LEN_TRANSFER = 15;
-localparam MAX_LEN_TRANSFER = 15;
+localparam LEN_TRANSFER = 14;
+localparam MAX_LEN_TRANSFER = 14;
 localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
 
-localparam INPUT_A_ROUND_WIDTH = 50;
+localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
 localparam MAX_TOTAL_CHANNEL_NUM = 10;
 localparam MAX_ITERATION_FILTER_NUM = 10;
@@ -99,7 +99,7 @@ module sparhixcel_design
         output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o
     );
-    
+    wire [$clog2(N+1)-1 : 0]filter_size_i;
     wire rst;
     wire load;
     wire ready;
@@ -168,7 +168,7 @@ module sparhixcel_design
     wire wr_mem_ld;
     wire wr_mem2_ld;
     wire wr_parameters_ld;
-    reg [PARAMETERS_WIDTH -1 : 0] data_parameters;
+    wire [PARAMETERS_WIDTH -1 : 0] data_parameters;
     wire [3:0]sa_state;
     wire input_ready; //from DRAM
     wire weight_ready;
@@ -275,6 +275,7 @@ module sparhixcel_design
         .WAITING_OP_COUNTER_WIDTH(WAITING_OP_COUNTER_WIDTH),
         //.COUNTER_ROUND_WIDTH(COUNTER_ROUND_WIDTH),
         .INPUT_FEATURE_ADDR_WIDTH((INPUT_FEATURE_ADDR_WIDTH)),
+        .INPUT_A_ROUND_WIDTH(INPUT_A_ROUND_WIDTH),
         .MAX_ITERATION_FILTER_NUM(MAX_ITERATION_FILTER_NUM),
         .NUMBER_SUPPORTED_FILTERS(NUMBER_SUPPORTED_FILTERS),
         .MAX_TOTAL_CHANNEL_NUM(MAX_TOTAL_CHANNEL_NUM),
@@ -345,7 +346,8 @@ module sparhixcel_design
         .signal_start_addr_dram_o(signal_start_addr_dram),
         .signal_finish_addr_dram_o(signal_finish_addr_dram), 
         .sa_state_o(sa_state),
-        .order_empty_bram_o(order_empty_bram)
+        .order_empty_bram_o(order_empty_bram),
+        .filter_size_o(filter_size_i)
     );
     
     DRAM_ACCESS_CTRL

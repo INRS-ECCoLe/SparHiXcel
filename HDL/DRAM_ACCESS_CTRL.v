@@ -80,7 +80,7 @@ module DRAM_ACCESS_CTRL
     reg [2:0] p_state, n_state;
     assign dram_access_state_o = p_state;
     
-    always @(p_state or general_rst_i or sa_state_i or SIG_ADDRS_WIDTH or INPUT_FEATURE_ADDR_WIDTH or load_time_memory or delay_parameter or input_wr_address_o or input_finish_addr_dram_i or signal_wr_address_o or signal_finish_addr_dram_i or weight_wr_address_o or dram_rd_address_o or weight_finish_addr_dram_i) begin: state_transition
+    always @(*) begin: state_transition
         case(p_state)
             reset:
                 if (general_rst_i == 0 && sa_state_i == 4'b0000) n_state = parameters;
@@ -106,7 +106,7 @@ module DRAM_ACCESS_CTRL
         
     end
 
-    always @(p_state or general_rst_i or sa_state_i or SIG_ADDRS_WIDTH or INPUT_FEATURE_ADDR_WIDTH or load_time_memory or delay_parameter or input_wr_address_o or input_finish_addr_dram_i or signal_wr_address_o or signal_finish_addr_dram_i or weight_wr_address_o or dram_rd_address_o or weight_finish_addr_dram_i) begin: output_assignments
+    always @(*) begin: output_assignments
         case(p_state)
             reset: begin
                 load_time_mem_rst = 1;

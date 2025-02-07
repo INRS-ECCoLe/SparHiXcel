@@ -59,7 +59,10 @@ module systolic_array
 
         output signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1]
     );
-        
+       /* reg [$clog2(N+1)-1 : 0]filter_size;
+        always@(posedge clk_i)begin
+            filter_size <=filter_size_i;
+        end*/
         wire signed [F_WIDTH + I_WIDTH - 1 : 0] output_pe [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_reg_shift [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_mux [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];

@@ -101,6 +101,11 @@ module pe
         wire oreg_2_ld;
         wire en_adder_1;
         wire en_adder_2;
+        //reg [$clog2(N+1)-1 : 0]filter_size;
+/*        always@(posedge clk_i)begin
+            filter_size <=filter_size_i;
+        end*/
+        
         
         //feature_block
         in_shift_reg 

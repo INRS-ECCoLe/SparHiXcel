@@ -114,7 +114,8 @@ module SA_controller
         output reg order_empty_bram_o,  //  
         output reg [$clog2(N+1)-1 : 0]filter_size_o      
     );
-     
+    reg [NUM_COL_WIDTH -1 : 0]row_num [0 : N_ROWS_ARRAY - 1];
+    reg sel_mux_node [0 : N_ROWS_ARRAY - 1]; 
     wire [DRAM_ADDR_WIDTH - 1 : 0] input_start_addr_dram;
     wire [DRAM_ADDR_WIDTH - 1 : 0] input_finish_addr_dram;
     wire [DRAM_ADDR_WIDTH - 1 : 0] weight_start_addr_dram;
@@ -1021,11 +1022,22 @@ module SA_controller
     
     
     always @ (posedge clk_i) begin 
-        filter_size_o <= filter_size;
+        if (general_rst_i)begin
+        
+            filter_size_o <= 0;
+            
+        end else begin
+            filter_size_o <= filter_size;
+        end
+       
     end
  
     always @ (posedge clk_i) begin 
-        iteration_num_filters_reg <= iteration_num_filters;
+        if (general_rst_i)begin
+            iteration_num_filters_reg <= 0;
+        end else begin
+            iteration_num_filters_reg <= iteration_num_filters;
+        end
     end
      
  /*   always @ (posedge clk_i) begin 
@@ -1033,53 +1045,115 @@ module SA_controller
     end*/
          
     always @ (posedge clk_i) begin 
-        total_num_channels_reg <= total_num_channels;
+        if (general_rst_i)begin
+            total_num_channels_reg <= 0;
+        end else begin
+            total_num_channels_reg <= total_num_channels;
+        
+        end
     end
              
     always @ (posedge clk_i) begin 
-        iteration_num_inputs_reg <= iteration_num_inputs;
+        if (general_rst_i)begin
+            iteration_num_inputs_reg <= 0;
+        end else begin
+            iteration_num_inputs_reg <= iteration_num_inputs;
+        end 
     end
              
     always @ (posedge clk_i) begin 
-        number_input_a_round_reg <= number_input_a_round;
+        if (general_rst_i)begin
+            number_input_a_round_reg <= 0;
+        end else begin    
+            number_input_a_round_reg <= number_input_a_round;
+        end    
     end
              
     always @ (posedge clk_i) begin 
-        input_start_addr_dram_o <= input_start_addr_dram;
+        if (general_rst_i)begin
+            input_start_addr_dram_o <= 0;
+        end else begin  
+            input_start_addr_dram_o <= input_start_addr_dram;
+        end
     end
                  
     always @ (posedge clk_i) begin 
-        input_finish_addr_dram_o <= input_finish_addr_dram;
+        if (general_rst_i)begin
+            input_finish_addr_dram_o <= 0;
+        end else begin  
+            input_finish_addr_dram_o <= input_finish_addr_dram;
+        end
     end
                  
     always @ (posedge clk_i) begin 
-        weight_start_addr_dram_o <= weight_start_addr_dram;
+        if (general_rst_i)begin
+            weight_start_addr_dram_o <= 0;
+        end else begin 
+            weight_start_addr_dram_o <= weight_start_addr_dram;
+        end    
     end
                
     always @ (posedge clk_i) begin 
-        weight_finish_addr_dram_o <= weight_finish_addr_dram;
+        if (general_rst_i)begin
+            weight_finish_addr_dram_o <= 0;
+        end else begin 
+            weight_finish_addr_dram_o <= weight_finish_addr_dram; 
+        end   
     end
                 
-    always @ (posedge clk_i) begin 
-        signal_start_addr_dram_o <= signal_start_addr_dram;
+    always @ (posedge clk_i) begin
+        if (general_rst_i)begin 
+            signal_start_addr_dram_o <= 0;
+        end else begin 
+            signal_start_addr_dram_o <= signal_start_addr_dram;
+        end    
     end
                  
     always @ (posedge clk_i) begin 
-        signal_finish_addr_dram_o <= signal_finish_addr_dram;
+        if (general_rst_i)begin 
+            signal_finish_addr_dram_o <= 0;
+        end else begin 
+            signal_finish_addr_dram_o <= signal_finish_addr_dram;
+        end    
     end
-    integer i , b;
+    integer i, b;
     always@ (*) begin  
         b = 0;
         for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
             if (b == filter_size_o) begin 
                 b = 0;  
             end
-            row_num_o[i] = b + 1'b1;
+            row_num[i] <= b + 1'b1;
             b = b + 1; 
-            if (row_num_o[i] == filter_size_o) sel_mux_node_o[i] = 0;
-            else sel_mux_node_o[i] = 1;   
+            if (row_num[i] == filter_size_o) sel_mux_node[i] = 0;
+            else sel_mux_node[i] = 1;   
         end
         
+    end
+    
+    always@(posedge clk_i)begin
+        if (general_rst_i)begin     
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                row_num_o[i]<= 0;
+            end
+        end else begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                row_num_o[i]<= row_num[i];
+            end
+        
+        end 
+    end
+    always@(posedge clk_i)begin
+        if (general_rst_i)begin     
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                sel_mux_node_o[i]<= 0;
+            end
+        end else begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                sel_mux_node_o[i]<= sel_mux_node[i];
+            end
+        
+        end 
     end
     // generating column number by using number of columns as an input.
     always @(posedge clk_i) begin

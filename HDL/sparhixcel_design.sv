@@ -151,7 +151,7 @@ module sparhixcel_design
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_2;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
-    reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo [0 : N_COLS_ARRAY - 1];
+    //reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
     
@@ -564,7 +564,7 @@ module sparhixcel_design
                     )
                     output_filter_store
                     (
-                        .data_in_i(result_oo),
+                        .data_in_i(result_o),
                         .clk_i(clk_i),
                         .sel_mux_out_1_i(sel_mux_out_1[f][col]),
                         .sel_mux_out_2_i(sel_mux_out_2[f][col]),
@@ -593,9 +593,9 @@ module sparhixcel_design
             end                                                                                                                                        
         end
     endgenerate 
-    always@(posedge clk_i)begin
+/*    always@(posedge clk_i)begin
         result_oo <= result_o;    
-    end
+    end*/
     output_ctrl
     #(
         .NUMBER_SUPPORTED_FILTERS(NUMBER_SUPPORTED_FILTERS),

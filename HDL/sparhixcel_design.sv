@@ -18,8 +18,8 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 15;
-localparam N_COLS_ARRAY = 15;
+localparam N_ROWS_ARRAY = 32;
+localparam N_COLS_ARRAY = 32;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;

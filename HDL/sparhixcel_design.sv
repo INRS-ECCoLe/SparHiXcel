@@ -18,8 +18,8 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 32;
-localparam N_COLS_ARRAY = 32;
+localparam N_ROWS_ARRAY = 16;
+localparam N_COLS_ARRAY = 16;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
@@ -31,9 +31,14 @@ localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
 localparam MAX_TOTAL_CHANNEL_NUM = 10;
 localparam MAX_ITERATION_FILTER_NUM = 10;
-localparam NUMBER_SUPPORTED_FILTERS = 30;
-localparam NUMBER_MUX_OUT_1 = 3;
+localparam NUMBER_SUPPORTED_FILTERS = 320;
+localparam NUMBER_MUX_OUT_1 = 4;
 localparam NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
+
+localparam NUMBER_MUX_FINAL_OUT_1 = 20;
+localparam NUMBER_INPUT_MUX_FINAL_OUT_1 =NUMBER_SUPPORTED_FILTERS / NUMBER_MUX_FINAL_OUT_1;
+localparam SEL_WIDTH_MUX_FINAL_OUT_1 = $clog2(NUMBER_INPUT_MUX_FINAL_OUT_1);
+
 localparam SEL_WIDTH_MUX_OUT_1 = $clog2(NUMBER_INPUT_MUX_OUT_1);    
 localparam SEL_WIDTH_MUX_OUT_2 = $clog2(NUMBER_MUX_OUT_1);
 localparam BRAM_ADDR_WIDTH = 11;   
@@ -45,15 +50,16 @@ localparam SEL_WIDTH = $clog2(N);
 localparam NUM_COL_WIDTH = $clog2(N+1);
 
 localparam ROM_SIG_WIDTH = (SEL_WIDTH + NUM_COL_WIDTH + SEL_MUX_TR_WIDTH + 1)*N_ROWS_ARRAY + ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)*(SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2 + 1) ;
-localparam SIG_ADDRS_WIDTH = 14;   
+localparam SIG_ADDRS_WIDTH = 11;   
         
 localparam LOAD_COUNTER_WIDTH = 5;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
 localparam INPUT_FEATURE_ADDR_WIDTH = 14;
-localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(MAX_ITERATION_FILTER_NUM) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
+localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
 localparam MAX_LOAD_TIME_MEM_WIDTH = 4; //how many cycles needed to load one row of input, weight, signal and parameter memories 
+
 
 module sparhixcel_design
     #(
@@ -88,7 +94,7 @@ module sparhixcel_design
         //input bram_wr_en_b,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_write_read,
         //input [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write,
-//        input [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters_i,
+        input [$clog2(MAX_ITERATION_FILTER_NUM) - 1 : 0] iteration_num_filters_i,
 //        input [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] num_filters_a_round_i,
 //        input [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] total_num_channels_i,
 //        input [$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER) - 1 : 0] iteration_num_inputs_i,
@@ -99,6 +105,8 @@ module sparhixcel_design
         output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o
     );
+    wire [I_WIDTH + F_WIDTH - 1 : 0]  out_final_1 [NUMBER_MUX_FINAL_OUT_1 - 1 : 0];
+    wire [I_WIDTH + F_WIDTH - 1 : 0]  out_final_1_reg  [NUMBER_MUX_FINAL_OUT_1 - 1 : 0];
     wire [$clog2(N+1)-1 : 0]filter_size_i;
     wire rst;
     wire load;
@@ -295,7 +303,7 @@ module sparhixcel_design
 //        .filter_size_i(filter_size_i),
         .clk_i(clk_i),
         .general_rst_i(general_rst_i),
-//        .iteration_num_filters_i(iteration_num_filters_i),
+        .iteration_num_filters_i(iteration_num_filters_i),
 //        .num_filters_a_round_i(num_filters_a_round_i),
 //        .total_num_channels_i(total_num_channels_i),
 //        .iteration_num_inputs_i(iteration_num_inputs_i),
@@ -620,10 +628,43 @@ module sparhixcel_design
     );
     
     always @(*) begin
-        final_output_o = out_filter[sel_mux_final];  
+        final_output_o = out_final_1_reg[sel_mux_final[$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : SEL_WIDTH_MUX_FINAL_OUT_1]];  
     end
-   
-   
+    //genvar i;
+
+    generate 
+        for (i = 0; i < NUMBER_MUX_FINAL_OUT_1; i = i + 1) begin
+            mux
+            #(
+                .I_WIDTH(I_WIDTH),
+                .F_WIDTH(F_WIDTH),
+                .SEL_WIDTH_MUX(SEL_WIDTH_MUX_FINAL_OUT_1),
+                .NUMBER_INPUT_MUX(NUMBER_INPUT_MUX_FINAL_OUT_1)
+            )
+            mux_final_out_1
+            (
+                .data_in_i(out_filter[i* NUMBER_INPUT_MUX_FINAL_OUT_1: (i + 1)*NUMBER_INPUT_MUX_FINAL_OUT_1 - 1]),
+                .sel_mux_i(sel_mux_final[SEL_WIDTH_MUX_FINAL_OUT_1 - 1:0]),
+                .data_out_o(out_final_1[i])
+            );
+            
+            
+            o_reg
+            #(
+                .F_WIDTH(F_WIDTH),
+                .I_WIDTH(I_WIDTH) 
+            )
+            out_final_reg
+            (
+                .wr_data_i(out_final_1[i]),
+                .clk_i(clk_i),
+                .oreg_rst_i(general_rst_i),
+                .oreg_wr_en_i(sa_state == 4'b0110),
+                .rd_data_o(out_final_1_reg[i])
+            );    
+        end
+    endgenerate
+
     dram_to_memory
     #(
         .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),

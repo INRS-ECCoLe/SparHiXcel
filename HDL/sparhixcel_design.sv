@@ -18,8 +18,8 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 16;
-localparam N_COLS_ARRAY = 16;
+localparam N_ROWS_ARRAY = 15;
+localparam N_COLS_ARRAY = 15;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
@@ -31,11 +31,11 @@ localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
 localparam MAX_TOTAL_CHANNEL_NUM = 10;
 localparam MAX_ITERATION_FILTER_NUM = 10;
-localparam NUMBER_SUPPORTED_FILTERS = 320;
+localparam NUMBER_SUPPORTED_FILTERS = 96;
 localparam NUMBER_MUX_OUT_1 = 4;
 localparam NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
 
-localparam NUMBER_MUX_FINAL_OUT_1 = 20;
+localparam NUMBER_MUX_FINAL_OUT_1 = 16;
 localparam NUMBER_INPUT_MUX_FINAL_OUT_1 =NUMBER_SUPPORTED_FILTERS / NUMBER_MUX_FINAL_OUT_1;
 localparam SEL_WIDTH_MUX_FINAL_OUT_1 = $clog2(NUMBER_INPUT_MUX_FINAL_OUT_1);
 
@@ -105,8 +105,8 @@ module sparhixcel_design
         output reg signed [F_WIDTH + I_WIDTH - 1 : 0] final_output_o,
         output [DRAM_ADDR_WIDTH - 1 : 0] dram_rd_address_o
     );
-    wire [I_WIDTH + F_WIDTH - 1 : 0]  out_final_1 [NUMBER_MUX_FINAL_OUT_1 - 1 : 0];
-    wire [I_WIDTH + F_WIDTH - 1 : 0]  out_final_1_reg  [NUMBER_MUX_FINAL_OUT_1 - 1 : 0];
+    wire signed [I_WIDTH + F_WIDTH - 1 : 0]  out_final_1 [NUMBER_MUX_FINAL_OUT_1 - 1 : 0];
+    wire signed [I_WIDTH + F_WIDTH - 1 : 0]  out_final_1_reg  [NUMBER_MUX_FINAL_OUT_1 - 1 : 0];
     wire [$clog2(N+1)-1 : 0]filter_size_i;
     wire rst;
     wire load;
@@ -627,8 +627,8 @@ module sparhixcel_design
         
     );
     
-    always @(*) begin
-        final_output_o = out_final_1_reg[sel_mux_final[$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : SEL_WIDTH_MUX_FINAL_OUT_1]];  
+    always @(posedge clk_i) begin
+        final_output_o <= out_final_1_reg[sel_mux_final[$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : SEL_WIDTH_MUX_FINAL_OUT_1]];  
     end
     //genvar i;
 

@@ -22,9 +22,8 @@
 
 module dram_to_memory
     #(
-    parameter DATA_IN_BITWIDTH = 8,
+    parameter DATA_IN_BITWIDTH = 32,
     parameter DATA_OUT_BITWIDTH = 163
-
     )
     (
     input clk_i,                   // Clock signal
@@ -34,8 +33,10 @@ module dram_to_memory
     output reg [DATA_OUT_BITWIDTH -1 : 0] data_out_o, // DATA_OUT_BITWIDTH-bit accumulated data
     output reg memory_write_enable // BRAM write enable signal
     );
-    localparam DIV_CEILING = (DATA_IN_BITWIDTH + DATA_OUT_BITWIDTH - 1) / DATA_IN_BITWIDTH;
-    localparam DATA_ACCU_BITWIDTH = DATA_IN_BITWIDTH * DIV_CEILING;
+    
+    localparam integer DIV_CEILING = (DATA_IN_BITWIDTH + DATA_OUT_BITWIDTH - 1) / DATA_IN_BITWIDTH;
+    localparam DATA_ACCU_BITWIDTH = DATA_IN_BITWIDTH * DIV_CEILING;    
+    
     reg [DATA_ACCU_BITWIDTH - 1 : 0] accumulated_data; // Register to store accumulated DATA_OUT_BITWIDTH bits
     reg [$clog2(DATA_ACCU_BITWIDTH) -1 : 0] bit_count;          // Counter for the number of bits accumulated
     reg [DATA_IN_BITWIDTH - 1 :0] data_in;
@@ -65,27 +66,33 @@ module dram_to_memory
             memory_write_enable <= 0;      // Disable BRAM write
             data_out_o <= {DATA_OUT_BITWIDTH{1'b0}};
         end else if (data_valid_i && (counter == 1)) begin
-            //if (DATA_IN_BITWIDTH < DATA_OUT_BITWIDTH) begin
-
-            if (bit_count < DATA_ACCU_BITWIDTH - 1)begin
-            
-                accumulated_data <= {accumulated_data[DATA_ACCU_BITWIDTH - DATA_IN_BITWIDTH - 1 : 0], data_in};
-                bit_count <= bit_count + DATA_IN_BITWIDTH;
-          
-            end
-            
-            // If DATA_OUT_BITWIDTH bits are accumulated, store them to BRAM
-            if (bit_count >= DATA_OUT_BITWIDTH) begin
-            
-                data_out_o <= accumulated_data[DATA_ACCU_BITWIDTH - 1 : DATA_ACCU_BITWIDTH - DATA_OUT_BITWIDTH];    // Store accumulated data
-                memory_write_enable <= 1;           // Enable BRAM write
-                bit_count <= 0;                   // Reset bit count
+            if (DATA_IN_BITWIDTH > DATA_OUT_BITWIDTH) begin
+                accumulated_data <= {DATA_ACCU_BITWIDTH{1'b0}};
+                data_out_o <= data_in[DATA_IN_BITWIDTH - 1 : DATA_IN_BITWIDTH - DATA_OUT_BITWIDTH];
+                memory_write_enable <= 1;
+                bit_count <= 0;
+            end else if (DATA_IN_BITWIDTH <= DATA_OUT_BITWIDTH) begin       
+                if (bit_count < DATA_ACCU_BITWIDTH - 1)begin
                 
-            end else begin
-                memory_write_enable <= 0;           // No write to BRAM yet
-            end
-
-        end 
+                    accumulated_data <= {accumulated_data[DATA_ACCU_BITWIDTH - DATA_IN_BITWIDTH - 1 : 0], data_in};
+                    bit_count <= bit_count + DATA_IN_BITWIDTH;
+              
+                end
+                
+                // If DATA_OUT_BITWIDTH bits are accumulated, store them to BRAM
+                if (bit_count >= DATA_OUT_BITWIDTH) begin
+                
+                    data_out_o <= accumulated_data[DATA_ACCU_BITWIDTH - 1 : DATA_ACCU_BITWIDTH - DATA_OUT_BITWIDTH];    // Store accumulated data
+                    memory_write_enable <= 1;           // Enable BRAM write
+                    bit_count <= 0;                   // Reset bit count
+                    
+                end else begin
+                    memory_write_enable <= 0;           // No write to BRAM yet
+                end
+            end 
+        end else begin
+            memory_write_enable <= 0; 
+        end
     end
 endmodule
 

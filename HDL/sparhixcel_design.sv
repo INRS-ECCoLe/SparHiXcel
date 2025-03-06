@@ -25,17 +25,17 @@ localparam F_WIDTH = 8;
 localparam N = 3;
 localparam LEN_TRANSFER = 14;
 localparam MAX_LEN_TRANSFER = 14;
-localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
+localparam SEL_MUX_TR_WIDTH =$clog2(MAX_LEN_TRANSFER);
 
 localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
 localparam MAX_TOTAL_CHANNEL_NUM = 10;
 localparam MAX_ITERATION_FILTER_NUM = 10;
-localparam NUMBER_SUPPORTED_FILTERS = 96;
+localparam NUMBER_SUPPORTED_FILTERS = 256;
 localparam NUMBER_MUX_OUT_1 = 4;
 localparam NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
 
-localparam NUMBER_MUX_FINAL_OUT_1 = 16;
+localparam NUMBER_MUX_FINAL_OUT_1 = 32;
 localparam NUMBER_INPUT_MUX_FINAL_OUT_1 =NUMBER_SUPPORTED_FILTERS / NUMBER_MUX_FINAL_OUT_1;
 localparam SEL_WIDTH_MUX_FINAL_OUT_1 = $clog2(NUMBER_INPUT_MUX_FINAL_OUT_1);
 
@@ -159,7 +159,7 @@ module sparhixcel_design
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_2;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
-    //reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo [0 : N_COLS_ARRAY - 1];
+    reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
     
@@ -522,6 +522,7 @@ module sparhixcel_design
     );    
     
         */
+
     dram_to_memory
     #(
         .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
@@ -572,7 +573,7 @@ module sparhixcel_design
                     )
                     output_filter_store
                     (
-                        .data_in_i(result_o),
+                        .data_in_i(result_oo),
                         .clk_i(clk_i),
                         .sel_mux_out_1_i(sel_mux_out_1[f][col]),
                         .sel_mux_out_2_i(sel_mux_out_2[f][col]),
@@ -601,9 +602,9 @@ module sparhixcel_design
             end                                                                                                                                        
         end
     endgenerate 
-/*    always@(posedge clk_i)begin
+    always@(posedge clk_i)begin
         result_oo <= result_o;    
-    end*/
+    end
     output_ctrl
     #(
         .NUMBER_SUPPORTED_FILTERS(NUMBER_SUPPORTED_FILTERS),
@@ -665,11 +666,11 @@ module sparhixcel_design
         end
     endgenerate
 
+
     dram_to_memory
     #(
         .DATA_IN_BITWIDTH(DATA_IN_DRAM_WIDTH),
         .DATA_OUT_BITWIDTH(PARAMETERS_WIDTH)
-
     )
     dram_to_parameters
     (

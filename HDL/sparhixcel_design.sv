@@ -18,22 +18,22 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 15;
-localparam N_COLS_ARRAY = 15;
+localparam N_ROWS_ARRAY = 32;
+localparam N_COLS_ARRAY = 32;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
-localparam LEN_TRANSFER = 14;
-localparam MAX_LEN_TRANSFER = 14;
-localparam SEL_MUX_TR_WIDTH =$clog2(MAX_LEN_TRANSFER);
+localparam LEN_TRANSFER = 31;
+localparam MAX_LEN_TRANSFER = 31;
+localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
 
 localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
 localparam MAX_TOTAL_CHANNEL_NUM = 10;
 localparam MAX_ITERATION_FILTER_NUM = 10;
 localparam NUMBER_SUPPORTED_FILTERS = 256;
-localparam NUMBER_MUX_OUT_1 = 4;
-localparam NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
+localparam NUMBER_MUX_OUT_1 = 8;
+localparam integer NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
 
 localparam NUMBER_MUX_FINAL_OUT_1 = 32;
 localparam NUMBER_INPUT_MUX_FINAL_OUT_1 =NUMBER_SUPPORTED_FILTERS / NUMBER_MUX_FINAL_OUT_1;
@@ -48,15 +48,15 @@ localparam DRAM_ADDR_WIDTH = 18;
 localparam ADDRS_WIDTH = $clog2(N);
 localparam SEL_WIDTH = $clog2(N);
 localparam NUM_COL_WIDTH = $clog2(N+1);
-
-localparam ROM_SIG_WIDTH = (SEL_WIDTH + NUM_COL_WIDTH + SEL_MUX_TR_WIDTH + 1)*N_ROWS_ARRAY + ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)*(SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2 + 1) ;
-localparam SIG_ADDRS_WIDTH = 11;   
+localparam integer N_FSUM_STORE_ROWS = ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY);
+localparam ROM_SIG_WIDTH = (SEL_WIDTH + NUM_COL_WIDTH + SEL_MUX_TR_WIDTH + 1)*N_ROWS_ARRAY + N_FSUM_STORE_ROWS*(SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2 + 1) ;
+localparam SIG_ADDRS_WIDTH = 10;   
         
 localparam LOAD_COUNTER_WIDTH = 5;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
-localparam INPUT_FEATURE_ADDR_WIDTH = 14;
+localparam INPUT_FEATURE_ADDR_WIDTH = 12;
 localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
 localparam MAX_LOAD_TIME_MEM_WIDTH = 4; //how many cycles needed to load one row of input, weight, signal and parameter memories 
 
@@ -132,22 +132,22 @@ module sparhixcel_design
     wire [(INPUT_FEATURE_ADDR_WIDTH) - 1 : 0] in_feature_addr;
     reg signed [F_WIDTH - 1: 0] f_weight_array_reg [0 : N_ROWS_ARRAY - 1];
     //reg end_feature;
-    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1][0 : N_COLS_ARRAY];
-    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_first [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
+    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1 [0 : N_FSUM_STORE_ROWS - 1][0 : N_COLS_ARRAY];
+    wire [SEL_WIDTH_MUX_OUT_1 - 1 : 0] sel_mux_out_1_first [0 : N_FSUM_STORE_ROWS - 1];
 //    assign sel_mux_out_1[0][0]= sel_mux_out_1_i;
 //    assign sel_mux_out_2[0][0]= sel_mux_out_2_i;
 //    assign sel_mux_out_1[1][0]= sel_mux_out_1_i;
 //    assign sel_mux_out_2[1][0]= sel_mux_out_2_i;
-    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY  - 1][0 : N_COLS_ARRAY];
-    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_first [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY  - 1];
+    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : N_FSUM_STORE_ROWS  - 1][0 : N_COLS_ARRAY];
+    wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2_first [0 : N_FSUM_STORE_ROWS  - 1];
     wire mux_out_reg_rst;
     wire mux_out_reg_wr_en;
     wire sel_mux_out_rst;
     wire sel_mux_out_ld;
     wire bram_rst;
-    wire bram_wr_en_a[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY];
-    wire bram_wr_en_a_first[0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
-    wire bram_wr_en_b [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1][0 : N_COLS_ARRAY - 1];
+    wire bram_wr_en_a[0 : N_FSUM_STORE_ROWS  - 1][0 : N_COLS_ARRAY];
+    wire bram_wr_en_a_first[0 : N_FSUM_STORE_ROWS  - 1];
+    wire bram_wr_en_b [0 : N_FSUM_STORE_ROWS - 1][0 : N_COLS_ARRAY - 1];
     wire bram_wr_en_a_rst;
     wire bram_wr_en_a_ld; 
     wire bram_wr_en_b_rst;
@@ -159,7 +159,7 @@ module sparhixcel_design
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_2;
     wire [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max;
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] result_o [0 : N_COLS_ARRAY - 1];
-    reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo [0 : N_COLS_ARRAY - 1];
+    (* max_fanout = 50 *) reg signed [F_WIDTH + I_WIDTH - 1 : 0] result_oo [0 : N_COLS_ARRAY - 1];
     wire signed [F_WIDTH + I_WIDTH - 1 : 0] out_filter [0 : NUMBER_SUPPORTED_FILTERS - 1];
     wire [$clog2(NUMBER_SUPPORTED_FILTERS) - 1 : 0] sel_mux_final;
     
@@ -191,7 +191,7 @@ module sparhixcel_design
     
     genvar t;
     generate 
-        for (t = 0 ; t < ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY) ; t = t + 1) begin
+        for (t = 0 ; t < N_FSUM_STORE_ROWS ; t = t + 1) begin
             assign bram_wr_en_a[t][0] = bram_wr_en_a_first[t];
 //            assign bram_wr_en_b[t][0] = bram_wr_en_b_i[t];
             assign sel_mux_out_1[t][0] = sel_mux_out_1_first [t];
@@ -462,6 +462,7 @@ module sparhixcel_design
         .dia_i(mem_data_input),
         .dob_o(in_feature_mem)
     );
+
     /*
     rom_signals
     #(

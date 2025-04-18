@@ -1,0 +1,1 @@
+set_max_fanout 300 [get_nets -hier -filter {NAME =~ "*p_state_reg*"}]

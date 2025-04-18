@@ -241,7 +241,7 @@ module DRAM_ACCESS_CTRL
 
     //Register and counter to track weight_wr_address_o
     
-    always @(posedge clk_i or posedge weight_wr_addr_rst) begin
+    always @(posedge clk_i ) begin //or posedge weight_wr_addr_rst deleted
         if (weight_wr_addr_rst) begin
         
             weight_wr_address_o <= {SIG_ADDRS_WIDTH{1'b0}}; 
@@ -256,7 +256,7 @@ module DRAM_ACCESS_CTRL
     
     //Register and counter to track signal_wr_address_o
     
-    always @(posedge clk_i or posedge signal_wr_addr_rst) begin
+    always @(posedge clk_i) begin // or posedge signal_wr_addr_rst deleted
         if (signal_wr_addr_rst) begin
         
             signal_wr_address_o <= {SIG_ADDRS_WIDTH{1'b0}}; 
@@ -270,8 +270,8 @@ module DRAM_ACCESS_CTRL
 
     //Register and counter to track input_wr_address_o
     
-    always @(posedge clk_i or posedge input_addr_rst) begin
-        if (input_addr_rst) begin
+    always @(posedge clk_i) begin //  or posedge input_addr_rst deleted
+        if (input_addr_rst) begin 
         
             input_wr_address_o <= {INPUT_FEATURE_ADDR_WIDTH{1'b0}}; 
             

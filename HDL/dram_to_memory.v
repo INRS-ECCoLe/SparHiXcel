@@ -66,13 +66,13 @@ module dram_to_memory
             memory_write_enable <= 0;      // Disable BRAM write
             data_out_o <= {DATA_OUT_BITWIDTH{1'b0}};
         end else if (data_valid_i && (counter == 1)) begin
-            if (DATA_IN_BITWIDTH > DATA_OUT_BITWIDTH) begin
+            if (DATA_IN_BITWIDTH >= DATA_OUT_BITWIDTH) begin
                 accumulated_data <= {DATA_ACCU_BITWIDTH{1'b0}};
                 data_out_o <= data_in[DATA_IN_BITWIDTH - 1 : DATA_IN_BITWIDTH - DATA_OUT_BITWIDTH];
                 memory_write_enable <= 1;
                 bit_count <= 0;
-            end else if (DATA_IN_BITWIDTH <= DATA_OUT_BITWIDTH) begin       
-                if (bit_count < DATA_ACCU_BITWIDTH - 1)begin
+            end else if (DATA_IN_BITWIDTH < DATA_OUT_BITWIDTH) begin       
+                if (bit_count < DATA_ACCU_BITWIDTH )begin
                 
                     accumulated_data <= {accumulated_data[DATA_ACCU_BITWIDTH - DATA_IN_BITWIDTH - 1 : 0], data_in};
                     bit_count <= bit_count + DATA_IN_BITWIDTH;
@@ -80,7 +80,7 @@ module dram_to_memory
                 end
                 
                 // If DATA_OUT_BITWIDTH bits are accumulated, store them to BRAM
-                if (bit_count >= DATA_OUT_BITWIDTH) begin
+                if (bit_count >= DATA_ACCU_BITWIDTH) begin
                 
                     data_out_o <= accumulated_data[DATA_ACCU_BITWIDTH - 1 : DATA_ACCU_BITWIDTH - DATA_OUT_BITWIDTH];    // Store accumulated data
                     memory_write_enable <= 1;           // Enable BRAM write

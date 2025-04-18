@@ -215,7 +215,7 @@ module SA_controller
         ready = 4'b0011 , start = 4'b0100 , waiting = 4'b0101,
         store = 4'b0110 , next_channels = 4'b0111 , next_filters = 4'b1000 ,
         next_input = 4'b1001, wait_bram = 4'b1010;
-    reg [3:0] p_state, n_state;
+    (* max_fanout = 300 *) reg [3:0] p_state, n_state;
     assign sa_state_o = p_state; 
     always @(*) begin: state_transition
         case(p_state)

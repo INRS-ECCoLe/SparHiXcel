@@ -301,7 +301,7 @@ module control
             end
         end
         // REGISTER FOR F_SEL_I
-        always @ (posedge clk_i or posedge f_sel_rst) begin 
+        always @ (posedge clk_i) begin //or posedge f_sel_rst deleted
         
             if (f_sel_rst) begin
                 f_sel_o <= 0;
@@ -314,7 +314,7 @@ module control
         end
         
          // REGISTER FOR column_num_i
-        always @ (posedge clk_i or posedge column_num_rst) begin 
+        always @ (posedge clk_i) begin  // or posedge column_num_rst deleted
         
             if (column_num_rst) begin
                 column_num_o <= 0;

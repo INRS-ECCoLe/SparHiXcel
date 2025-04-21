@@ -1197,7 +1197,6 @@ module SA_controller
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
                 sel_mux_node_o[i]<= sel_mux_node[i];
             end
-        
         end 
     end
     // generating column number by using number of columns as an input.
@@ -1205,7 +1204,11 @@ module SA_controller
         if (rst_col)begin
             foreach(count_col[i]) begin
                 count_col[i] <= 0;
-            end    
+            end 
+            for (i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                column_num_o[i] <= 0;
+            end
+               
         end else if (ld_col) begin
             for (i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
                 column_num_o[i] <= number_of_columns [i] - count_col[i];
@@ -1215,12 +1218,19 @@ module SA_controller
                     count_col[i] <= count_col[i] + 1;    
                 end
             end    
-        end
+        end else begin
+            for (i = 0; i < N_ROWS_ARRAY; i = i + 1) begin
+                column_num_o[i] <= 0;
+            end
+            foreach(count_col[i]) begin
+                count_col[i] <= 0;
+            end
+        end       
     end
   
     //Register for f_sel_o
     
-    always @ (posedge clk_i or posedge f_sel_rst) begin 
+    always @ (posedge clk_i) begin // or posedge f_sel_rst deleted
         
         if (f_sel_rst) begin
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
@@ -1230,11 +1240,15 @@ module SA_controller
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
                 f_sel_o[i] <= f_sel[i];
             end   
+        end else begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                f_sel_o[i] <= 0;
+            end    
         end
     end
     //Register for sel_mux_out_1_o
 
-    always @ (posedge clk_i or posedge sel_mux_out_rst_o) begin 
+    always @ (posedge clk_i) begin // or posedge sel_mux_out_rst_o
         
         if (sel_mux_out_rst_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
@@ -1244,11 +1258,15 @@ module SA_controller
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 sel_mux_out_1_o [i] <= sel_mux_out_1 [i];
             end   
+        end else begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                sel_mux_out_1_o [i] <= 0;
+            end    
         end
     end
     //Register for sel_mux_out_2_o
     
-    always @ (posedge clk_i or posedge sel_mux_out_rst_o) begin 
+    always @ (posedge clk_i) begin // or posedge sel_mux_out_rst_o
         
         if (sel_mux_out_rst_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
@@ -1258,11 +1276,15 @@ module SA_controller
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 sel_mux_out_2_o [i] <= sel_mux_out_2 [i];
             end   
+        end else begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                sel_mux_out_2_o [i] <= 0;
+            end    
         end
     end
     //Register for bram_wr_en_a_o
     
-    always @ (posedge clk_i or posedge bram_wr_en_a_rst_o) begin 
+    always @ (posedge clk_i) begin // or posedge bram_wr_en_a_rst_o
         
         if (bram_wr_en_a_rst_o) begin
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
@@ -1272,11 +1294,15 @@ module SA_controller
             for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
                 bram_wr_en_a_o [i] <= bram_wr_en_a [i];
             end   
+        end else begin
+            for(i = 0; i < (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY ; i = i + 1)begin
+                bram_wr_en_a_o [i] <= 0;
+            end    
         end
     end
     //Register for number_of_columns_o
     
-    always @ (posedge clk_i or posedge number_of_columns_rst) begin 
+    always @ (posedge clk_i) begin // or posedge number_of_columns_rst
         
         if (number_of_columns_rst) begin
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
@@ -1286,12 +1312,17 @@ module SA_controller
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
                 number_of_columns_o[i] <= number_of_columns[i];
             end     
+        end else begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                number_of_columns_o[i] <= 0;
+            end     
         end
+        
     end
     
     //Register for sel_mux_tr_o
 
-    always @ (posedge clk_i or posedge sel_mux_tr_rst) begin 
+    always @ (posedge clk_i) begin // or posedge sel_mux_tr_rst
         
         if (sel_mux_tr_rst) begin 
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
@@ -1301,10 +1332,14 @@ module SA_controller
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
                 pre_sel_mux_tr[i] <= sel_mux_tr[i];
             end  
-        end
+        end else begin 
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                pre_sel_mux_tr[i] <= 0;
+            end 
+        end   
     end
     
-    always @ (posedge clk_i or posedge sel_mux_tr_rst) begin 
+    always @ (posedge clk_i) begin // or posedge sel_mux_tr_rst
         
         if (sel_mux_tr_rst) begin 
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
@@ -1314,11 +1349,15 @@ module SA_controller
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
                 sel_mux_tr_o[i] <= pre_sel_mux_tr[i];
             end  
+        end else begin 
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                sel_mux_tr_o[i] <= 0;
+            end     
         end
     end
     //Register for en_adder_node_o
     
-    always @ (posedge clk_i or posedge en_adder_node_rst) begin 
+    always @ (posedge clk_i) begin // or posedge en_adder_node_rst
         
         if (en_adder_node_rst) begin
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
@@ -1328,6 +1367,10 @@ module SA_controller
             for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
                 en_adder_node_o[i] <= en_adder_node[i];
             end 
+        end else begin
+            for(i = 0; i < N_ROWS_ARRAY; i = i + 1)begin
+                en_adder_node_o[i] <= 0;
+            end       
         end
     end
 /*
@@ -1415,7 +1458,7 @@ module SA_controller
     
     //Register and adder to track the number of processed channels 
 
-    always @(posedge clk_i or posedge num_channel_rst) begin
+    always @(posedge clk_i) begin // or posedge num_channel_rst
         if (num_channel_rst) begin
             //num_channel <= {$clog2(MAX_TOTAL_CHANNEL_NUM){1'b0}}; // Reset num_channel
             increment_done_ch <= 0; // Reset the increment_done_ch flag
@@ -1433,7 +1476,7 @@ module SA_controller
     end
     //Register and adder to track count_round_input 
     
-    always @(posedge clk_i or posedge count_round_input_rst) begin
+    always @(posedge clk_i) begin // or posedge count_round_input_rst
         if (count_round_input_rst) begin
             count_round_input <= {$clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER){1'b0}}; // Reset count_round_input
             increment_done_round_input <= 0; // Reset the increment_done_round_input flag
@@ -1449,7 +1492,7 @@ module SA_controller
     end
     //Register and adder to track count_round_filter 
 
-    always @(posedge clk_i or posedge count_round_filter_rst) begin
+    always @(posedge clk_i ) begin //or posedge count_round_filter_rst
         if (count_round_filter_rst) begin
             count_round_filter <= {$clog2(MAX_ITERATION_FILTER_NUM){1'b0}}; // Reset count_round_filter
             increment_done_round_filter <= 0; // Reset the increment_done_round_filter flag
@@ -1588,7 +1631,7 @@ module SA_controller
         .count_num_o(count_input_for_achannel)
     );    
         
-    always@(posedge clk_i or posedge general_rst_i)begin
+    always@(posedge clk_i)begin // or posedge general_rst_i
         if (general_rst_i) begin
             num_round_for_all_ch <= 0;
             num_ch_in_pe_array <= 0;
@@ -1612,7 +1655,7 @@ module SA_controller
         .counter_ld_i(bram_addr_write_read_ld && (start_wait_count_num >= 2 * (filter_size_o - 1) + 5 + num_ch_in_pe_array)),
         .count_num_o(bram_addr_read_write)
     );
-    always @ (posedge clk_i or posedge rst_last_bram_addr) begin 
+    always @ (posedge clk_i) begin  // or posedge rst_last_bram_addr
         if (rst_last_bram_addr)begin
             last_bram_addr <= 0;
         end else if (ld_last_bram_addr) begin

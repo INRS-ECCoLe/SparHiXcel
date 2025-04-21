@@ -38,7 +38,7 @@ module mux_n_1
         output reg [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_o,
         output signed [I_WIDTH + F_WIDTH - 1 : 0] tr_data_o
     );
-        always @ (posedge clk_i or posedge sel_mux_tr_rst_i) begin 
+        always @ (posedge clk_i) begin  // or posedge sel_mux_tr_rst_i
         
             if (sel_mux_tr_rst_i) begin
                 sel_mux_tr_o <= 0;

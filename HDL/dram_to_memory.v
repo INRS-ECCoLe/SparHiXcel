@@ -41,7 +41,7 @@ module dram_to_memory
     reg [$clog2(DATA_ACCU_BITWIDTH) -1 : 0] bit_count;          // Counter for the number of bits accumulated
     reg [DATA_IN_BITWIDTH - 1 :0] data_in;
     wire counter;
-    always @(posedge clk_i or posedge dram_to_mem_rst_i) begin
+    always @(posedge clk_i) begin // or posedge dram_to_mem_rst_i deleted
         if (dram_to_mem_rst_i) begin
             data_in <= {DATA_IN_BITWIDTH{1'b0}};
         end else if (data_valid_i) begin 
@@ -59,7 +59,7 @@ module dram_to_memory
         .counter_ld_i(data_valid_i&& counter != 1),
         .count_num_o(counter)
     ); 
-    always @(posedge clk_i or posedge dram_to_mem_rst_i) begin
+    always @(posedge clk_i) begin // or posedge dram_to_mem_rst_i deleted
         if (dram_to_mem_rst_i) begin
             accumulated_data <= {DATA_ACCU_BITWIDTH{1'b0}};  // Reset accumulated data
             bit_count <= {$clog2(DATA_ACCU_BITWIDTH){1'b0}};           // Reset bit count

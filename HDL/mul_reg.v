@@ -39,7 +39,7 @@ module mul_reg
         integer i;
         reg signed [I_WIDTH + F_WIDTH - 1 : 0] memory [0 : N-1];
         
-        always @ (posedge clk_i or posedge mreg_rst_i) begin 
+        always @ (posedge clk_i) begin  //  or posedge mreg_rst_i deleted
             if (mreg_rst_i) begin
                 for(i = 0 ; i < N ; i = i + 1) begin
                     memory[i] <= {(I_WIDTH + F_WIDTH){1'b0}}; 

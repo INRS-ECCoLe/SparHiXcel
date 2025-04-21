@@ -38,7 +38,7 @@ module in_shift_reg
         integer i; 
         reg signed [I_WIDTH - 1: 0] shift_reg [N-1:0]; 
    
-        always @(posedge clk_i or posedge freg_rst_i) begin
+        always @(posedge clk_i) begin // or posedge freg_rst_i deleted
             if (freg_rst_i) begin
                 for(i = 0 ; i < N ; i = i + 1) begin
                     shift_reg[i] <= {I_WIDTH{1'b0}}; 

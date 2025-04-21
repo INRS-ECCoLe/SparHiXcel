@@ -33,7 +33,7 @@ module o_reg
     output reg signed [F_WIDTH + I_WIDTH - 1 : 0] rd_data_o
     );
    
-    always @ (posedge clk_i or posedge oreg_rst_i) begin 
+    always @ (posedge clk_i) begin  // or posedge oreg_rst_i deleted
         if (oreg_rst_i) begin
             rd_data_o <= 0;
         end else if (oreg_wr_en_i) begin 

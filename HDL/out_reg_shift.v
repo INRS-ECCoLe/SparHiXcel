@@ -41,7 +41,7 @@ module out_reg_shift
         integer i; 
         reg signed [I_WIDTH + F_WIDTH - 1 : 0] reg_shift [0 : N - 2]; 
    
-        always @(posedge clk_i or posedge out_reg_shift_rst_i) begin
+        always @(posedge clk_i) begin //or posedge out_reg_shift_rst_i deleted
             if (out_reg_shift_rst_i) begin
                 for(i = 0 ; i < N - 1 ; i = i + 1) begin
                     reg_shift[i] <= {I_WIDTH + F_WIDTH{1'b0}}; 
@@ -57,7 +57,7 @@ module out_reg_shift
         
         assign out_data_o = (number_of_columns_o == filter_size_i) ? in_data_i : reg_shift[filter_size_i - number_of_columns_o - 1];
         
-        always @ (posedge clk_i or posedge number_of_columns_rst_i) begin 
+        always @ (posedge clk_i) begin //or posedge number_of_columns_rst_i deleted
         
             if (number_of_columns_rst_i) begin
                 number_of_columns_o <= 0;

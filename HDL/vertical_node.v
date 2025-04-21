@@ -57,7 +57,7 @@ module vertical_node
                 .c_o(c_node_o)
             );
          
-        always @ (posedge clk_i or posedge node_rst_i) begin 
+        always @ (posedge clk_i) begin // or posedge node_rst_i deleted
             if (node_rst_i) begin
                 out_reg_node <= 0;
             end else if (node_ld_i) begin 
@@ -66,7 +66,7 @@ module vertical_node
             end
         end 
         
-        always @ (posedge clk_i or posedge path_node_rst_i) begin 
+        always @ (posedge clk_i) begin // or posedge path_node_rst_i deleted
         
             if (path_node_rst_i) begin
                 en_adder_node_o <= 0;

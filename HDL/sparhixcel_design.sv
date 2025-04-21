@@ -215,7 +215,7 @@ module sparhixcel_design
        
     //Register for f_sel_o
     integer a;
-    always @ (posedge clk_i or posedge rd_weight_rst) begin 
+    always @ (posedge clk_i) begin // or posedge rd_weight_rst
         
         if (rd_weight_rst) begin
             for(a = 0; a < N_ROWS_ARRAY; a = a + 1)begin

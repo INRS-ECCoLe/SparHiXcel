@@ -32,7 +32,7 @@ module weight_reg
         output reg signed [F_WIDTH - 1 : 0] f_weight_o
     );
         
-        always @ (posedge clk_i or posedge wreg_rst_i) begin 
+        always @ (posedge clk_i) begin  //  or posedge wreg_rst_i deleted
         
             if (wreg_rst_i) begin
                 f_weight_o <= 0;

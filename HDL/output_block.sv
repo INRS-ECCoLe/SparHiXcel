@@ -126,7 +126,7 @@ module output_block
     );
     //Register for bram_wr_en_a
     
-    always @ (posedge clk_i or posedge bram_wr_en_a_rst_i) begin 
+    always @ (posedge clk_i) begin // or posedge bram_wr_en_a_rst_i
         if (bram_wr_en_a_rst_i) begin
             bram_wr_en_a_o <= 0; 
         end else if (bram_wr_en_a_ld_i) begin   
@@ -144,7 +144,7 @@ module output_block
     end*/
     //Register for sel_mux_out_1
     
-    always @ (posedge clk_i or posedge sel_mux_rst_i) begin 
+    always @ (posedge clk_i) begin // or posedge sel_mux_rst_i
         if (sel_mux_rst_i) begin
             sel_mux_out_1_o <= 0; 
         end else if (sel_mux_ld_i) begin   
@@ -153,7 +153,7 @@ module output_block
     end
      //Register for sel_mux_out_1
     
-    always @ (posedge clk_i or posedge sel_mux_rst_i) begin 
+    always @ (posedge clk_i) begin // or posedge sel_mux_rst_i
         if (sel_mux_rst_i) begin
             sel_mux_out_2_o <= 0; 
         end else if (sel_mux_ld_i) begin   

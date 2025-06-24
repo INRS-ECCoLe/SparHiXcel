@@ -74,10 +74,10 @@ module SA_controller
         input weight_ready_i,
         input bram_ready_i,
         output [INPUT_FEATURE_ADDR_WIDTH - 1 : 0] in_feature_addr_o,
-        output reg rst_o,
-        output reg load_o,
-        output reg ready_o,
-        output reg start_op_o,
+        (*max_fanout = 50*)output reg rst_o,
+        (*max_fanout = 50*)output reg load_o,
+        (*max_fanout = 50*)output reg ready_o,
+        (*max_fanout = 50*)output reg start_op_o,
         output reg rd_weight_ld_o,//
         output reg rd_weight_rst_o,//
         output reg rd_feature_ld_o,//
@@ -215,8 +215,8 @@ module SA_controller
         ready = 4'b0011 , start = 4'b0100 , waiting = 4'b0101,
         store = 4'b0110 , next_channels = 4'b0111 , next_filters = 4'b1000 ,
         next_input = 4'b1001, wait_bram = 4'b1010;
-    (* max_fanout = 300 *) reg [3:0] p_state, n_state;
-    assign sa_state_o = p_state; 
+    (*max_fanout = 50*)reg [3:0] p_state, n_state;
+    (*max_fanout = 50*)assign sa_state_o = p_state; 
     always @(*) begin: state_transition
         case(p_state)
             reset:

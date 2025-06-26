@@ -9,9 +9,10 @@ from torch.utils.data import DataLoader
 import assign_PE_max_output_filter
 
 # Load EfficientNetV2-S with pretrained weights
-model = models.efficientnet_v2_s(weights='IMAGENET1K_V1')  # This is the identifier for the pretrained weights
+#model = models.efficientnet_v2_s(weights='IMAGENET1K_V1')  # This is the identifier for the pretrained weights
 
-
+# Load the pretrained ResNet-18 model
+model = models.vgg16(pretrained=True)
 
 
 
@@ -61,6 +62,12 @@ def model_weights_to_numpy(model):
 
 # Convert the pruned model weights to NumPy arrays
 weights_dict = model_weights_to_numpy(model)
+def get_pruned_weights_dict(pruning_amount=0.7):
+    #model = models.efficientnet_v2_s(weights='IMAGENET1K_V1')
+    model = models.vgg16(pretrained=True)
+    model = prune_weights(model, pruning_amount)
+    return model_weights_to_numpy(model)
+
 
 # Example: Access the weights for a specific layer
 # For example, let's access the weights of the first convolution layer (it might be different for EfficientNetV2)
@@ -71,6 +78,6 @@ weights_dict = model_weights_to_numpy(model)
 # Example of accessing another layer's weights (e.g., for a different convolution layer)
 #conv2_weights = weights_dict['features.3.0.weight']  # Again, the key name will depend on the model's architecture
 #print(conv2_weights.shape)
-assign_PE_max_output_filter.assign_PE_max_output_filter(3,33, 256, np.transpose(weights_dict['features.4.4.block.3.0.weight'],(2,3,1,0)))
-print(weights_dict['features.2.0.block.0.0.weight'].shape)
-print(np.transpose(weights_dict['features.2.0.block.0.0.weight'],(2,3,1,0)).shape)
+#assign_PE_max_output_filter.assign_PE_max_output_filter(3,33, 256, np.transpose(weights_dict['features.4.4.block.3.0.weight'],(2,3,1,0)))
+#print(weights_dict['features.2.0.block.0.0.weight'].shape)
+#print(np.transpose(weights_dict['features.2.0.block.0.0.weight'],(2,3,1,0)).shape)

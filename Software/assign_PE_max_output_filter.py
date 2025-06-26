@@ -47,10 +47,10 @@ def assign_PE_max_output_filter (N_ROWS_ARRAY, N_COLS_ARRAY, max_output_filter, 
   else:
 
     n = math.ceil(f_weights.shape[2]/math.floor(N_ROWS_ARRAY/f_weights.shape[0]))
-  print(f_weights_sorted.shape[3])
-  print(f_weights_sorted.shape[2])
-  print(f_weights_sorted.shape[1])
-  print(f_weights_sorted.shape[0])
+  ##print(f_weights_sorted.shape[3])
+  ##print(f_weights_sorted.shape[2])
+  ##print(f_weights_sorted.shape[1])
+  ##print(f_weights_sorted.shape[0])
   #print(n)
   remaining_array = N_COLS_ARRAY * np.ones((N_ROWS_ARRAY, 1))
   full_array = N_COLS_ARRAY * np.ones((N_ROWS_ARRAY, 1))
@@ -191,10 +191,10 @@ def assign_PE_max_output_filter (N_ROWS_ARRAY, N_COLS_ARRAY, max_output_filter, 
 
   #print("PE_array_f_sel")
   #print(PE_array_f_sel)
-  print('num of zeros')
-  print(100*(np.sum(abs(Q_f_weights) < pow(2,-8))/(f_weights.shape[0]*f_weights.shape[1]*f_weights.shape[2]*f_weights.shape[3])))
-  print('pe utilization saving')
-  print(100*(1- count/(math.ceil(f_weights.shape[3]/int(N_COLS_ARRAY / f_weights.shape[1]))* math.ceil(f_weights.shape[2]/int(N_ROWS_ARRAY / f_weights.shape[0])))))
+  ##print('num of zeros')
+  ##print(100*(np.sum(abs(Q_f_weights) < pow(2,-8))/(f_weights.shape[0]*f_weights.shape[1]*f_weights.shape[2]*f_weights.shape[3])))
+  ##print('pe utilization saving')
+  ##print(100*(1- count/(math.ceil(f_weights.shape[3]/int(N_COLS_ARRAY / f_weights.shape[1]))* math.ceil(f_weights.shape[2]/int(N_ROWS_ARRAY / f_weights.shape[0])))))
   #print(100*(1- ((count)*N_ROWS_ARRAY*N_COLS_ARRAY/(f_weights.shape[0]*f_weights.shape[1]*f_weights.shape[2]*f_weights.shape[3]))))
   #print(100*( 1 - count /math.ceil((f_weights.shape[2] * f_weights.shape[3])/(int(N_ROWS_ARRAY / f_weights.shape[0])*int(N_COLS_ARRAY / f_weights.shape[1])))))
   #print(100*(1- count / (math.ceil(f_weights.shape[0]*f_weights.shape[1]*f_weights.shape[2]*f_weights.shape[3]/(N_COLS_ARRAY * N_ROWS_ARRAY)))))
@@ -210,10 +210,10 @@ def assign_PE_max_output_filter (N_ROWS_ARRAY, N_COLS_ARRAY, max_output_filter, 
   #print("PE_array_weights")
   #print(PE_array_weights)
  # print(np.array(en_adder_node_all[0][0][::-1]))
-  print('compression saving')
-  print(100*(number_col_removed/(f_weights.shape[1] * f_weights.shape[2]*f_weights.shape[3])))
-  print("count")
-  print(count)
+  ##print('compression saving')
+  ##print(100*(number_col_removed/(f_weights.shape[1] * f_weights.shape[2]*f_weights.shape[3])))
+  ##print("count")
+  ##print(count)
   # Example data: lists of NumPy arrays
   #print(N_ROWS_ARRAY)
   #print('compression saving')
@@ -247,4 +247,4 @@ def assign_PE_max_output_filter (N_ROWS_ARRAY, N_COLS_ARRAY, max_output_filter, 
   #files.download('weight.txt')
 
 ###
-  return
+  return 100*(1- count/(math.ceil(f_weights.shape[3]/int(N_COLS_ARRAY / f_weights.shape[1]))* math.ceil(f_weights.shape[2]/int(N_ROWS_ARRAY / f_weights.shape[0]))))

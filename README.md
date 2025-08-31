@@ -1,8 +1,4 @@
 # SparHiXcel
-Sparsity-enhanced Horizontally-integrated Deep Learning Hardware Accelerator
-# Version published in 38th IEEE International System-on-Chip Conference
-For accessing resources for  Version published in 38th IEEE International System-on-Chip Conference refer to the branch of large-output-filter-based.
-# SparHiXcel
 **Sparsity-Enhanced Horizontally-Integrated Deep Learning Hardware Accelerator**
 
 ## Publication

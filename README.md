@@ -1,6 +1,8 @@
 # SparHiXcel
 **Sparsity-Enhanced Horizontally-Integrated Deep Learning Hardware Accelerator**
 
+*(Project description coming soon)*
+
 ## Publication
 This work has been accepted to be published in the **38th IEEE International System-on-Chip Conference (SOCC)**.
 

@@ -20,7 +20,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-(* use_dsp = "yes" *)module multiplier
+//(* use_dsp = "yes" *) 
+    module multiplier
     #(
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8

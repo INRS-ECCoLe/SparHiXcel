@@ -18,24 +18,24 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 3;
-localparam N_COLS_ARRAY = 16;
+localparam N_ROWS_ARRAY = 33;
+localparam N_COLS_ARRAY = 51;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
 localparam N = 3;
-localparam LEN_TRANSFER = 1;
-localparam MAX_LEN_TRANSFER = 1;
-localparam SEL_MUX_TR_WIDTH = 1;//$clog2(MAX_LEN_TRANSFER);
+localparam LEN_TRANSFER = 20;
+localparam MAX_LEN_TRANSFER = 20;
+localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
 
 localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
 localparam MAX_TOTAL_CHANNEL_NUM = 10;
 localparam MAX_ITERATION_FILTER_NUM = 10;
-localparam NUMBER_SUPPORTED_FILTERS = 128;
-localparam NUMBER_MUX_OUT_1 = 4;
+localparam NUMBER_SUPPORTED_FILTERS = 256;
+localparam NUMBER_MUX_OUT_1 = 8;
 localparam integer NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
 
-localparam NUMBER_MUX_FINAL_OUT_1 = 16;
+localparam NUMBER_MUX_FINAL_OUT_1 = 32;
 localparam NUMBER_INPUT_MUX_FINAL_OUT_1 =NUMBER_SUPPORTED_FILTERS / NUMBER_MUX_FINAL_OUT_1;
 localparam SEL_WIDTH_MUX_FINAL_OUT_1 = $clog2(NUMBER_INPUT_MUX_FINAL_OUT_1);
 
@@ -50,13 +50,13 @@ localparam SEL_WIDTH = $clog2(N);
 localparam NUM_COL_WIDTH = $clog2(N+1);
 localparam integer N_FSUM_STORE_ROWS = ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY);
 localparam ROM_SIG_WIDTH = (SEL_WIDTH + NUM_COL_WIDTH + SEL_MUX_TR_WIDTH + 1)*N_ROWS_ARRAY + N_FSUM_STORE_ROWS*(SEL_WIDTH_MUX_OUT_1 + SEL_WIDTH_MUX_OUT_2 + 1) ;
-localparam SIG_ADDRS_WIDTH = 13;   
+localparam SIG_ADDRS_WIDTH = 10;   
         
 localparam LOAD_COUNTER_WIDTH = 5;
 localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
-localparam INPUT_FEATURE_ADDR_WIDTH = 16;
+localparam INPUT_FEATURE_ADDR_WIDTH = 13;
 localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
 localparam MAX_LOAD_TIME_MEM_WIDTH = 4; //how many cycles needed to load one row of input, weight, signal and parameter memories 
 

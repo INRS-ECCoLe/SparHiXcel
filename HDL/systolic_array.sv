@@ -39,6 +39,7 @@ module systolic_array
         input signed [I_WIDTH - 1: 0] in_feature_i [0 : N_ROWS_ARRAY - 1],
         input [SEL_WIDTH - 1: 0] f_sel_i [0 : N_ROWS_ARRAY - 1], // you can determine f_sel_i by how many a weight shifted to right in an elastic group. f_sel_i= number of shifted location of an element of weights in an elastic group
         input [NUM_COL_WIDTH -1 : 0]row_num_i [0 : N_ROWS_ARRAY - 1],
+        input general_rst_i,
         input rst_i,
         input load_i,
         input ready_i,
@@ -89,6 +90,25 @@ module systolic_array
         wire path_node_ld[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         
         
+        reg [$clog2(N+1)-1 : 0]filter_size [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
+        integer r, cl;
+        always @(posedge clk_i) begin
+            if (general_rst_i) begin
+                for(r = 0; r < N_ROWS_ARRAY; r = r+1) begin 
+                    for(cl = 0; cl < N_COLS_ARRAY; cl = cl+1) begin
+                        filter_size[r][cl] <= 0;
+                    end
+                end
+            end else begin
+                for(r = 0; r < N_ROWS_ARRAY; r = r+1) begin 
+                    for(cl = 0; cl < N_COLS_ARRAY; cl = cl+1) begin
+                        filter_size[r][cl] <= filter_size_i;
+                    end
+                end
+            end
+        end
+        
+        
         genvar a, b;
         generate
             for (a = 0; a < N_ROWS_ARRAY; a = a + 1) begin
@@ -111,7 +131,7 @@ module systolic_array
                             .clk_i(clk_i),
                             .out_reg_shift_rst_i(out_reg_shift_rst[a][b]),
                             .out_reg_shift_ld_i(out_reg_shift_ld[a][b]),
-                            .filter_size_i(filter_size_i),
+                            .filter_size_i(filter_size[a][b]),
                             .number_of_columns_o(number_of_columns[a][b]),
                             .out_data_o(out_reg_shift[a][b])
                         );
@@ -133,7 +153,7 @@ module systolic_array
                             .clk_i(clk_i),
                             .out_reg_shift_rst_i(out_reg_shift_rst[a][b]),
                             .out_reg_shift_ld_i(out_reg_shift_ld[a][b]),
-                            .filter_size_i(filter_size_i),
+                            .filter_size_i(filter_size[a][b]),
                             .number_of_columns_o(number_of_columns[a][b]),
                             .out_data_o(out_reg_shift[a][b])
                         );
@@ -262,7 +282,7 @@ module systolic_array
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel_i[x]),
                                 .row_num_i(row_num_i[x]),
-                                .filter_size_i(filter_size_i),
+                                .filter_size_i(filter_size[x][y]),
                                 //.f_sel_rst_i(rst_i),
                                 //.f_sel_ld_i(wr_en_i),
                                 //.freg_rst_i(rst_i),
@@ -325,7 +345,7 @@ module systolic_array
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel[x][y-1]),
                                 .row_num_i(row_num_i[x]),
-                                .filter_size_i(filter_size_i),
+                                .filter_size_i(filter_size[x][y]),
 //                                .f_sel_rst_i(rst_i),
 //                                .f_sel_ld_i(wr_en_i),
 //                                .freg_rst_i(rst_i),
@@ -390,7 +410,7 @@ module systolic_array
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel_i[x]),
                                 .row_num_i(row_num_i[x]),
-                                .filter_size_i(filter_size_i),
+                                .filter_size_i(filter_size[x][y]),
 //                                .f_sel_rst_i(rst_i),
 //                                .f_sel_ld_i(wr_en_i),
 //                                .freg_rst_i(rst_i),
@@ -453,7 +473,7 @@ module systolic_array
                                 .in_feature_i(in_feature_i[x]),
                                 .f_sel_i(f_sel[x][y-1]),
                                 .row_num_i(row_num_i[x]),
-                                .filter_size_i(filter_size_i),
+                                .filter_size_i(filter_size[x][y]),
 //                                .f_sel_rst_i(rst_i),
 //                                .f_sel_ld_i(wr_en_i),
 //                                .freg_rst_i(rst_i),

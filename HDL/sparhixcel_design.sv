@@ -249,6 +249,7 @@ module sparhixcel_design
         .in_feature_i(in_feature_array),
         .f_sel_i(f_sel), 
         .row_num_i(row_num),
+        .general_rst_i(general_rst_i),
         .rst_i(rst),
         .load_i(load),
         .ready_i(ready),

@@ -87,7 +87,7 @@ module SA_controller
         output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_read_write_o,
         output [BRAM_ADDR_WIDTH - 1 : 0] bram_addr_max_o,
         output reg [SEL_WIDTH - 1: 0] f_sel_o [0 : N_ROWS_ARRAY - 1],
-        output reg [NUM_COL_WIDTH -1 : 0]row_num_o [0 : N_ROWS_ARRAY - 1],
+        (*max_fanout = 50*) output reg [NUM_COL_WIDTH -1 : 0]row_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] column_num_o [0 : N_ROWS_ARRAY - 1],
         output reg [NUM_COL_WIDTH - 1 : 0] number_of_columns_o[0 : N_ROWS_ARRAY - 1],
         output reg [SEL_MUX_TR_WIDTH - 1 : 0] sel_mux_tr_o [0 : N_ROWS_ARRAY - 1],
@@ -193,9 +193,9 @@ module SA_controller
     wire [SEL_WIDTH_MUX_OUT_2 - 1 : 0] sel_mux_out_2 [0 : (NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY - 1];
     wire bram_wr_en_a [0 : ((NUMBER_SUPPORTED_FILTERS + N_COLS_ARRAY - 1) / N_COLS_ARRAY)  - 1];
     //wire bram_wr_en_b;  
-    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] ch_round_number;
-    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_round_for_all_ch;
-    reg [$clog2(MAX_TOTAL_CHANNEL_NUM) - 1 : 0] num_ch_in_pe_array ;
+    reg [$clog2(MAX_TOTAL_CHANNEL_NUM*7/N_ROWS_ARRAY) - 1 : 0] ch_round_number;
+    reg [$clog2(MAX_TOTAL_CHANNEL_NUM*7/N_ROWS_ARRAY) - 1 : 0] num_round_for_all_ch;
+    reg [$clog2(N_ROWS_ARRAY) - 1 : 0] num_ch_in_pe_array ;
 
     reg [SEL_MUX_TR_WIDTH - 1 : 0] pre_sel_mux_tr [0 : N_ROWS_ARRAY - 1];
     reg start_wait_rst; 

@@ -18,21 +18,21 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-localparam N_ROWS_ARRAY = 33;
-localparam N_COLS_ARRAY = 51;
+localparam N_ROWS_ARRAY = 36;
+localparam N_COLS_ARRAY = 36;
 localparam I_WIDTH = 8;
 localparam F_WIDTH = 8;
-localparam N = 3;
-localparam LEN_TRANSFER = 20;
-localparam MAX_LEN_TRANSFER = 20;
+localparam N = 7;
+localparam LEN_TRANSFER = 10;
+localparam MAX_LEN_TRANSFER = 10;
 localparam SEL_MUX_TR_WIDTH = $clog2(MAX_LEN_TRANSFER);
 
 localparam INPUT_A_ROUND_WIDTH = $clog2(50);
 localparam MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER = 2;
-localparam MAX_TOTAL_CHANNEL_NUM = 10;
-localparam MAX_ITERATION_FILTER_NUM = 10;
+localparam MAX_TOTAL_CHANNEL_NUM = 512;// it was 10 
+localparam MAX_ITERATION_FILTER_NUM = 2;
 localparam NUMBER_SUPPORTED_FILTERS = 256;
-localparam NUMBER_MUX_OUT_1 = 8;
+localparam NUMBER_MUX_OUT_1 = 9;
 localparam integer NUMBER_INPUT_MUX_OUT_1 = (N_COLS_ARRAY + NUMBER_MUX_OUT_1 -1)/NUMBER_MUX_OUT_1; 
 
 localparam NUMBER_MUX_FINAL_OUT_1 = 32;
@@ -57,7 +57,7 @@ localparam READY_COUNTER_WIDTH = 4;
 localparam WAITING_OP_COUNTER_WIDTH = 4;
 //localparam COUNTER_ROUND_WIDTH = 3;
 localparam INPUT_FEATURE_ADDR_WIDTH = 13;
-localparam PARAMETERS_WIDTH = $clog2(N+1) + $clog2(NUMBER_SUPPORTED_FILTERS) +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_FEATURE_ADDR_WIDTH)+ 6*DRAM_ADDR_WIDTH;
+localparam PARAMETERS_WIDTH = $clog2(N+1)  +$clog2(MAX_TOTAL_CHANNEL_NUM) + $clog2(MAX_ITERATION_INPUT_ADDRESS_FOR_A_LAYER)+ (INPUT_A_ROUND_WIDTH)+ 6*DRAM_ADDR_WIDTH+1; //+ $clog2(NUMBER_SUPPORTED_FILTERS)// i added +1 , but i am not sure if it is correct
 localparam MAX_LOAD_TIME_MEM_WIDTH = 4; //how many cycles needed to load one row of input, weight, signal and parameter memories 
 
 
@@ -413,7 +413,7 @@ module sparhixcel_design
     
     
     
-    simple_dual_port_ram 
+    Dual_Port_Ram 
     #(
         .MEMORY_WIDTH(ROM_SIG_WIDTH),
         .ADDRS_WIDTH(SIG_ADDRS_WIDTH)
@@ -447,7 +447,7 @@ module sparhixcel_design
         .memory_write_enable(wr_mem_ld) 
     ); 
         
-    simple_dual_port_ram 
+    Dual_Port_Ram 
     #(
         .MEMORY_WIDTH(N_ROWS_ARRAY * I_WIDTH),
         .ADDRS_WIDTH(INPUT_FEATURE_ADDR_WIDTH)
@@ -541,7 +541,7 @@ module sparhixcel_design
         .memory_write_enable(wr_mem2_ld) 
     );
     
-    simple_dual_port_ram 
+    Dual_Port_Ram 
     #(
         .MEMORY_WIDTH(N_ROWS_ARRAY * F_WIDTH),
         .ADDRS_WIDTH(SIG_ADDRS_WIDTH)

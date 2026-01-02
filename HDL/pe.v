@@ -20,7 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module pe 
+ (* keep_hierarchy = "yes" *) module pe 
     #(
         parameter I_WIDTH = 8,
         parameter F_WIDTH = 8,

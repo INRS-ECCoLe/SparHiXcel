@@ -90,7 +90,7 @@ module systolic_array
         wire path_node_ld[0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         
         
-        reg [$clog2(N+1)-1 : 0]filter_size [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
+        (*max_fanout = 50*)reg [$clog2(N+1)-1 : 0]filter_size [0 : N_ROWS_ARRAY -1] [0 : N_COLS_ARRAY -1];
         integer r, cl;
         always @(posedge clk_i) begin
             if (general_rst_i) begin
